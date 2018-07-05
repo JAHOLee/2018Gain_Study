@@ -1,34 +1,35 @@
 #include "fitter.h"
-#include "TF1.h"
 #include "TFile.h"
 #include "TROOT.h"
-#include "TCanvas.h"
+#include "TLine.h"
 #include "TMultiGraph.h"
-#include "TProfile.h"
-
+#include "TStyle.h"
 fitter::fitter(TGraph *in_gr,vector<double> HG,vector<double> LG,vector<double> TOT){
+  c1 = new TCanvas();
   gr = in_gr;
   HG_vec = HG;
   LG_vec = LG;
   TOT_vec = TOT;
   undershoot_percent = -1;
 }
-fitter::fitter(){}
+fitter::fitter(){
+  c1 = new TCanvas();
+}
 fitter::~fitter(){
 }
 void fitter::fit(int labelE = 10){
+  root_logon();
   if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
        || labelE == 100 || labelE == 150 )) {
     cout << "invalid energy!" << endl;
     return;}
   char title[50];
-  //sprintf(title,"root_result/%iGeV.root",labelE);
-  //TFile f(title);
-  TFile f("TPro.root");
+  sprintf(title,"root_result/%iGeV.root",labelE);
+  TFile f(title);
   int MAXBD  = 28;
   int MAXSKI = 4;
   int MAXCH  = 32;
-  TCanvas *c1 = new TCanvas();
+
   // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,500);
   // sat_fit->SetParLimits(0,50,120);
   // sat_fit->SetParLimits(1,2000,6000);
@@ -38,36 +39,50 @@ void fitter::fit(int labelE = 10){
   TF1 *sat_fit   = new TF1("4th_try","[0]*x",0,500);
   double p0[MAXBD][MAXSKI][MAXCH];
   //TF1 *sat_fit_2 = new TF1("4th_try_2","[0]*x+[1]",350,500);
-  
+  gStyle->SetOptStat(0);
+  TProfile *tpr = new TProfile("","",400,0,800,0,4000);
+  TH1D *h1 = new TH1D("","",tpr->GetNbinsX(),0,800);
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	p0[BD][SKI][CH] = -999;
 	int true_ch = CH*2;
-	sprintf(title,"Board_%i/HGLG_chip%i,ch%i",BD,SKI,true_ch);
-	TProfile *tpr = (TProfile *)f.Get(title);
+	sprintf(title,"Board_%i/HGLG_chip%i_ch%i",BD,SKI,true_ch);
+	tpr = (TProfile *)f.Get(title);
 	if(tpr == NULL) continue;
+	int nentry = tpr->GetEntries();
+	if( nentry < 1000 ) continue;
 	tpr->SetName(title);
-	tpr->Draw();
+	//tpr->Draw();
+	//c1->Update();
+	//getchar();
+	
 	tpr->Fit(sat_fit,"EMR");
 	//tpr->Fit(sat_fit_2,"EMR");
 	sat_fit->Draw("same");
 	sat_fit->SetLineColor(6);
 	p0[BD][SKI][CH] = sat_fit->GetParameter(0);
-	TH1D *h1 = new TH1D("cc","cc",400,0,4000);
+	
+	h1->Reset();
+	//h1->Sumw2();
 	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
 	  double x = tpr->GetBinCenter(i);
-	  if(x == 0) continue;
 	  double y = tpr->GetBinContent(i);
-	  double res = (x*p0[BD][SKI][CH] - y) / p0[BD][SKI][CH];
-	  h1->SetBinContent(i,res*1000+2000);
-	  h1->SetMarkerSize(1.2);
-	  h1->SetMarkerColor(6);
+	  if(x == 0 || y == 0) continue;
+	  //cout << "x = "<< x << ", y = " << y << endl;
+	  double res = ( y - x*p0[BD][SKI][CH]) / (x*p0[BD][SKI][CH]);
+	  h1->SetBinContent(i,res);
 	}
-	h1->Draw("samee");
+	tpr->SetMarkerColor(SKI+1);
+	h1->SetMarkerStyle(20);
+	h1->SetMarkerSize(1.2);
+	h1->SetMarkerColor(SKI+1);
+
+	//h1->Draw("e");
 	//sat_fit_2->Draw("same");
 	//sat_fit_2->SetLineColor(7);
 	//tpr->Draw();
+	ratio_plot(tpr,sat_fit,h1);
 	c1->Update();
 	getchar();
       }
@@ -122,7 +137,7 @@ void fitter::fit_Graph(){
 
 void fitter::fit_Draw(){
   
-  TCanvas *c1 = new TCanvas();
+
   TF1 *fit = new TF1("fit","pol1",0,500);
   TMultiGraph *mgr = new TMultiGraph();
 
@@ -267,6 +282,165 @@ void fitter::fit_Draw(){
   c1->Update();
   getchar();
   */
-  delete c1;
+
+
+}
+
+void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
+  
+  //Ratio plot
+  c1->cd();
+  TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
+  pad1->SetBottomMargin(0.02); // Upper and lower plot are joined
+  pad1->SetGridx();         // Vertical grid
+  pad1->Draw();             // Draw the upper pad: pad1
+  pad1->cd();               // pad1 becomes the current pad
+  tpr->Draw();              // Draw h1
+  fit->Draw("same");
+  
+  // Do not draw the Y axis label on the upper plot and redraw a small
+  // axis instead, in order to avoid the first label (0) to be clipped.
+  //h1->GetYaxis()->SetLabelSize(0.);
+  
+  TAxis *axis = tpr->GetYaxis();
+  axis->SetLabelFont(43); // Absolute font size in pixel (precision 3)
+  axis->SetLabelSize(15);
+  axis->SetTitleSize(0.06);
+  axis->SetTitleOffset(0.7);
+  axis->Draw();
+
+  //h1->SetXTitle("DAC");
+  //h1->GetXaxis()->SetTitleOffset(4);
+  axis = tpr->GetXaxis();
+  axis->SetLabelFont(43); // Absolute font size in pixel (precision 3)
+  axis->SetLabelSize(0);
+  axis->Draw();
+
+  // lower plot will be in pad
+  c1->cd();          // Go back to the main canvas before defining pad2
+
+  TPad *pad2 = new TPad("pad2", "pad2", 0, 0, 1, 0.3);
+  pad2->SetTopMargin(0.1);
+  pad2->SetBottomMargin(0.2);
+  pad2->SetGridx(); // vertical grid
+  pad2->Draw();
+  pad2->cd();       // pad2 becomes the current pad
+  hratio->SetTitle("");
+  //hratio->SetXTitle("DAC");
+  //hratio->SetYTitle("ratio");
+  
+  hratio->SetMaximum(0.1);
+  hratio->SetMinimum(-0.1); 
+  //hratio->Draw();
+  
+  hratio->GetYaxis()->SetTitle("#frac{Fit - HG}{Fit}");
+  hratio->GetYaxis()->SetTitleOffset(0.35);
+  hratio->GetYaxis()->SetLabelFont(43); 
+  hratio->GetYaxis()->SetLabelSize(15);
+
+  axis = hratio->GetYaxis();
+  axis->SetNdivisions(404);
+  axis->Draw();
+
+  axis = hratio->GetXaxis();
+  axis->SetTitle("LG");
+  axis->SetLabelFont(43); // Absolute font size in pixel (precision 3)
+  axis->SetLabelSize(15);
+  
+  
+
+  hratio->GetXaxis()->SetTitleSize(0.12);
+  hratio->GetXaxis()->SetTitleOffset(0.76);
+  hratio->GetYaxis()->SetTitleSize(0.12);
+  //axis->Draw();
+
+  
+  hratio->Draw("e");
+  //Add TLine to show mean value
+  TLine *Gline = new TLine(0,0,tpr->GetXaxis()->GetXmax(),0);
+  Gline->SetLineColor(1);
+  Gline->SetLineWidth(4.8);
+  Gline->SetLineStyle(7);
+  Gline->Draw();  
+  c1->Update();
+  getchar();
+}
+
+void fitter::root_logon(){
+
+cout << endl << "Welcome to the ATLAS rootlogon.C" << endl;
+//
+// based on a style file from BaBar
+//
+
+//..BABAR style from RooLogon.C in workdir
+TStyle *atlasStyle= new TStyle("ATLAS","Atlas style");
+
+// use plain black on white colors
+ Int_t icol=0;
+atlasStyle->SetFrameBorderMode(icol);
+atlasStyle->SetCanvasBorderMode(icol);
+atlasStyle->SetPadBorderMode(icol);
+atlasStyle->SetPadColor(icol);
+atlasStyle->SetCanvasColor(icol);
+atlasStyle->SetStatColor(icol);
+//atlasStyle->SetFillColor(icol);
+
+// set the paper & margin sizes
+atlasStyle->SetPaperSize(20,26);
+atlasStyle->SetPadTopMargin(0.1);
+//atlasStyle->SetPadRightMargin(0.05);
+atlasStyle->SetPadRightMargin(0.12);
+atlasStyle->SetPadBottomMargin(0.16);
+atlasStyle->SetPadLeftMargin(0.12);
+
+// use large fonts
+//Int_t font=72;
+Int_t font=32;
+Double_t tsize=0.05;
+atlasStyle->SetTextFont(font);
+
+
+atlasStyle->SetTextSize(tsize);
+atlasStyle->SetLabelFont(font,"x");
+atlasStyle->SetTitleFont(font,"x");
+atlasStyle->SetLabelFont(font,"y");
+atlasStyle->SetTitleFont(font,"y");
+atlasStyle->SetLabelFont(font,"z");
+atlasStyle->SetTitleFont(font,"z");
+
+atlasStyle->SetLabelSize(tsize,"x");
+atlasStyle->SetTitleSize(tsize,"x");
+atlasStyle->SetLabelSize(tsize,"y");
+atlasStyle->SetTitleSize(tsize,"y");
+atlasStyle->SetLabelSize(tsize,"z");
+atlasStyle->SetTitleSize(tsize,"z");
+//atlasStyle->SetTitleOffset(1.2,"y");
+
+//use bold lines and markers
+atlasStyle->SetMarkerStyle(20);
+atlasStyle->SetMarkerSize(1.2);
+atlasStyle->SetHistLineWidth(2.);
+atlasStyle->SetLineStyleString(2,"[12 12]"); // postscript dashes
+
+//get rid of X error bars and y error bar caps
+//atlasStyle->SetErrorX(0.001);
+
+//do not display any of the standard histogram decorations
+//atlasStyle->SetOptTitle(0);
+//atlasStyle->SetOptStat(1111);
+atlasStyle->SetOptStat(0);
+//atlasStyle->SetOptFit(1111);
+atlasStyle->SetOptFit(0);
+
+// put tick marks on top and RHS of plots
+atlasStyle->SetPadTickX(1);
+atlasStyle->SetPadTickY(1);
+ 
+
+gROOT->SetStyle("Plain");
+
+//gStyle->SetPadTickX(1);
+//gStyle->SetPadTickY(1);
 
 }
