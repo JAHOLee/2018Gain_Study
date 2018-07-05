@@ -15,6 +15,20 @@ fitter::fitter(TGraph *in_gr,vector<double> HG,vector<double> LG,vector<double> 
 
 fitter::~fitter(){
 }
+void fitter::fit(int labelE = 10){
+  if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
+       || labelE == 100 || labelE == 150 )) {
+    cout << "invalid energy!" << endl;
+    return;}
+  char title[50];
+  sprintf(title,"%iGeV.root",labelE);
+  TFile f(title);
+  for(int BD = 1 ;BD < 29 ; ++BD){
+
+  }
+  
+}
+
 
 void fitter::fit_Graph(){
   int npoint = gr->GetN();
@@ -34,7 +48,6 @@ void fitter::fit_Graph(){
 
   //fit_Draw();
 }
-
 
 void fitter::fit_Draw(){
   
