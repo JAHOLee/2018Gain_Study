@@ -1,4 +1,4 @@
-CXXFLAGS=-g -std=c++11 -m64 -O2 -Wall
+CXXFLAGS=-g -m64 -O2 -Wall
 ROOTFLAGS=$(shell root-config --libs --cflags --glibs)
 
 makePlots: main.o makePlots.o fitter.o
