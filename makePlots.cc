@@ -174,9 +174,9 @@ void makePlots::Draw_HG_LG(){
     for(int chip = 0 ; chip < MAXCHIP ; ++chip){
       for(int ch = 0 ; ch < MAXCH ;++ch){
 	sprintf(title,"HGLG_BD%i_chip%i_ch%i",BD,chip,ch*2);
-	tpr_HGLG[BD][chip][ch] = new TProfile(title,title,400,0,800,0,4000);
+	tpr_HGLG[BD][chip][ch] = new TProfile(title,title,200,0,800,0,4000);
 	sprintf(title,"LGTOT_BD%i_chip%i_ch%i",BD,chip,ch*2);
-	tpr_LGTOT[BD][chip][ch] = new TProfile(title,title,300,0,800,0,3000);
+	tpr_LGTOT[BD][chip][ch] = new TProfile(title,title,150,0,800,0,3000);
 	tpr_LS[BD][chip][ch] = 0;      }}}
   
   for(int ev = 0 ; ev < nevents ; ++ev){
