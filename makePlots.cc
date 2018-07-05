@@ -160,12 +160,96 @@ void makePlots::Loop(){
   root_out->cd();
   h_tprLGUS->Write("tprLGUS");
 }
+void makePlots::Draw_HG_LG(){
+  int MAXBD   = 28;
+  int MAXCHIP = 4;
+  int MAXCH   = 32;
+  char title[50];
+  TProfile *tpr_HGLG[MAXBD][MAXCHIP][MAXCH];
+  TProfile *tpr_LGTOT[MAXBD][MAXCHIP][MAXCH];
+  int tpr_LS[MAXBD][MAXCHIP][MAXCH];
+  
+  
+  for(int BD = 0; BD < MAXBD ; ++BD){
+    for(int chip = 0 ; chip < MAXCHIP ; ++chip){
+      for(int ch = 0 ; ch < MAXCH ;++ch){
+	sprintf(title,"HGLG_BD%i_chip%i_ch%i",BD,chip,ch*2);
+	tpr_HGLG[BD][chip][ch] = new TProfile(title,title,40,0,800,0,4000);
+	sprintf(title,"LGTOT_BD%i_chip%i_ch%i",BD,chip,ch*2);
+	tpr_LGTOT[BD][chip][ch] = new TProfile(title,title,40,0,800,0,4000);
+	tpr_LS[BD][chip][ch] = 0;      }}}
+  
+  for(int ev = 0 ; ev < nevents ; ++ev){
+    T_Rawhit->GetEntry(ev);
+    for(int hit = 0 ; hit < (int) HighGainADC->size() ; ++hit){
+      double HG,LG,TOT;
+      int chip,ch,BD;
+      HG   = HighGainADC->at(hit);
+      LG   = LowGainADC->at(hit);
+      TOT  = TotSlow->at(hit);
+      chip = skirocID->at(hit);
+      ch   = channelID->at(hit);
+      ch   /= 2;
+      BD   = boardID->at(hit);
+      if( HG > 200 && LG < 20) tpr_LS[BD][chip][ch]++;
+      if( LG < 20 ) continue;
+      tpr_HGLG[BD][chip][ch]->Fill(LG,HG,1);
+      tpr_LGTOT[BD][chip][ch]->Fill(TOT,LG,1);
+    }
+  }
+
+
+  TDirectory *dir;
+  for(int BD = 0; BD < MAXBD ; ++BD){
+    dir = new TDirectory();
+    sprintf(title,"Board_%i",BD);
+    dir = root_out->mkdir(title);
+    dir->cd();
+    for(int chip = 0 ; chip < MAXCHIP ; ++chip){
+      for(int ch = 0 ; ch < MAXCH ;++ch){
+	sprintf(title,"HGLG_chip%i_ch%i",chip,ch*2);
+	tpr_HGLG[BD][chip][ch]->SetTitle(title);
+	tpr_HGLG[BD][chip][ch]->SetName(title);
+	tpr_HGLG[BD][chip][ch]->SetMarkerStyle(20);
+	tpr_HGLG[BD][chip][ch]->SetMarkerSize(1.2);
+	tpr_HGLG[BD][chip][ch]->SetMarkerColor(chip+1);
+	tpr_HGLG[BD][chip][ch]->Write(title);
+	sprintf(title,"LGTOT_chip%i_ch%i",chip,ch*2);
+	tpr_LGTOT[BD][chip][ch]->SetTitle(title);
+	tpr_LGTOT[BD][chip][ch]->SetName(title);
+	tpr_LGTOT[BD][chip][ch]->SetMarkerStyle(20);
+	tpr_LGTOT[BD][chip][ch]->SetMarkerSize(1.2);
+	tpr_LGTOT[BD][chip][ch]->SetMarkerColor(chip+1);
+	tpr_LGTOT[BD][chip][ch]->Write(title);
+  
+	if(tpr_LS[BD][chip][ch] != 0){
+	  double US_LG_percernt = tpr_LS[BD][chip][ch]*100./Hit_counter[BD][chip][ch];
+	  h_tprLGUS->Fill(US_LG_percernt);
+	  ofstream of("LG_US.txt", std::ios::app);
+	  of << BD << "\t" << chip << "\t" << ch*2 << "\t" << US_LG_percernt
+	     << endl;
+	  of.close();}	
+      }
+    }
+  }
+
+  for(int BD = 0; BD < MAXBD ; ++BD){
+    for(int chip = 0 ; chip < MAXCHIP ; ++chip){
+      for(int ch = 0 ; ch < MAXCH ;++ch){
+	delete tpr_HGLG[BD][chip][ch];
+	delete tpr_LGTOT[BD][chip][ch];}}}
+  
+}
 
 void makePlots::Draw_HG_LG(int BD = 0,bool Draw_SCAT = 0){
   bool save_png = false;
   //if(Hit_counter[BD][chip][ch] < 1000) return NULL;
   int NCHIP = 4;
   int NCH   = 32;
+  char title[50];
+  char title_sub[20];
+
+  
   vector< vector< vector< double > > > HG_vec,LG_vec,TOT_vec;
   for(int chip = 0 ; chip < NCHIP ; ++chip){
     HG_vec.resize(NCHIP);
@@ -187,61 +271,59 @@ void makePlots::Draw_HG_LG(int BD = 0,bool Draw_SCAT = 0){
       LG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(LowGainADC->at(hit));
       TOT_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(TotSlow->at(hit));}
   }
-  //}
-  char title[50];
-  char title_sub[20];
-
+    //}
   if(Draw_SCAT){  
+
     TGraph  *gr;
     TMultiGraph  *mgr;
     TLegend *leg;
-      for(int ch = 0; ch < NCH ; ++ch){
-	mgr = new TMultiGraph();
-	leg = new TLegend(0.65,0.13,0.9,0.4);
-	leg->SetBorderSize(0);
+    for(int ch = 0; ch < NCH ; ++ch){
+      mgr = new TMultiGraph();
+      leg = new TLegend(0.65,0.13,0.9,0.4);
+      leg->SetBorderSize(0);
 
-	if( Hit_counter[BD][0][ch] < 500 ||  Hit_counter[BD][1][ch] < 500) continue;
-	if( Hit_counter[BD][2][ch] < 500 ||  Hit_counter[BD][3][ch] < 500) continue;
+      if( Hit_counter[BD][0][ch] < 500 ||  Hit_counter[BD][1][ch] < 500) continue;
+      if( Hit_counter[BD][2][ch] < 500 ||  Hit_counter[BD][3][ch] < 500) continue;
 
-	for(int chip = 0 ; chip < NCHIP ; ++chip){
+      for(int chip = 0 ; chip < NCHIP ; ++chip){
  
-	  gr = new TGraph(HG_vec[chip][ch].size(),&LG_vec[chip][ch][0],&HG_vec[chip][ch][0]);
-	  //cout << HG_vec[chip][ch].size() << endl;
-	  //cout << LG_vec[chip][ch].size() << endl;
+	gr = new TGraph(HG_vec[chip][ch].size(),&LG_vec[chip][ch][0],&HG_vec[chip][ch][0]);
+	//cout << HG_vec[chip][ch].size() << endl;
+	//cout << LG_vec[chip][ch].size() << endl;
       
-	  fitter f(gr,HG_vec[chip][ch],LG_vec[chip][ch],TOT_vec[chip][ch]);
-	  f.fit_Graph();
-	  h_LGundershoot->Fill(f.undershoot_percent);
-	  gr->Draw("AP");
-	  gr->SetMarkerStyle(20);
-	  gr->SetMarkerSize(0.2);
-	  gr->SetMarkerColor(chip+1);
+	fitter f(gr,HG_vec[chip][ch],LG_vec[chip][ch],TOT_vec[chip][ch]);
+	f.fit_Graph();
+	h_LGundershoot->Fill(f.undershoot_percent);
+	gr->Draw("AP");
+	gr->SetMarkerStyle(20);
+	gr->SetMarkerSize(0.2);
+	gr->SetMarkerColor(chip+1);
       
-	  sprintf(title_sub,"chip%i",chip);
-	  leg->AddEntry(gr,title_sub,"P");
-	  mgr->Add(gr);
+	sprintf(title_sub,"chip%i",chip);
+	leg->AddEntry(gr,title_sub,"P");
+	mgr->Add(gr);
       
-	  if(f.undershoot_percent > 2){
-	    ofstream of("LG_US.txt", std::ios::app);
-	    of << "BD ,chip, CH " << BD << "," << chip << "," << ch*2
-	       << " LG_US = " << f.undershoot_percent << endl;
-	    of.close();}
+	if(f.undershoot_percent > 2){
+	  ofstream of("LG_US.txt", std::ios::app);
+	  of << "BD ,chip, CH " << BD << "," << chip << "," << ch*2
+	     << " LG_US = " << f.undershoot_percent << endl;
+	  of.close();}
       
-	}
-
-	mgr->Draw("AP");
-	mgr->GetYaxis()->SetTitle("HG(ADC)");
-	mgr->GetYaxis()->SetTitleOffset(1.2);
-	mgr->GetXaxis()->SetTitle("LG(ADC)");
-    
-	sprintf(title,"Board_%iCH%i",BD,ch*2);
-	leg->SetHeader(title);
-	leg->Draw("same");
-	c1->Update();
-	sprintf(title,"plot_out/BD_%iCH%i.png",BD,ch*2);
-	if(save_png)
-	  c1->SaveAs(title);
       }
+
+      mgr->Draw("AP");
+      mgr->GetYaxis()->SetTitle("HG(ADC)");
+      mgr->GetYaxis()->SetTitleOffset(1.2);
+      mgr->GetXaxis()->SetTitle("LG(ADC)");
+    
+      sprintf(title,"Board_%iCH%i",BD,ch*2);
+      leg->SetHeader(title);
+      leg->Draw("same");
+      c1->Update();
+      sprintf(title,"plot_out/BD_%iCH%i.png",BD,ch*2);
+      if(save_png)
+	c1->SaveAs(title);
+    }
   }
   
   TProfile *tpr_HGLG;

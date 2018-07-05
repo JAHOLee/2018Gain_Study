@@ -6,11 +6,13 @@
 using namespace std;
 class fitter{
  public:
+  fitter();
   fitter(TGraph *in_gr,vector<double> HG,vector<double> LG,vector<double> TOT);
  ~fitter();
   
  void fit_Graph();
-
+ void fit(int labelE);
+ 
  bool   status;
  double p0;
  double p1;

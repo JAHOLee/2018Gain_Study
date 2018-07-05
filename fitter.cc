@@ -1,5 +1,6 @@
 #include "fitter.h"
 #include "TF1.h"
+#include "TFile.h"
 #include "TROOT.h"
 #include "TCanvas.h"
 #include "TMultiGraph.h"
@@ -12,7 +13,7 @@ fitter::fitter(TGraph *in_gr,vector<double> HG,vector<double> LG,vector<double> 
   TOT_vec = TOT;
   undershoot_percent = -1;
 }
-
+fitter::fitter(){}
 fitter::~fitter(){
 }
 void fitter::fit(int labelE = 10){
@@ -21,12 +22,82 @@ void fitter::fit(int labelE = 10){
     cout << "invalid energy!" << endl;
     return;}
   char title[50];
-  sprintf(title,"%iGeV.root",labelE);
-  TFile f(title);
-  for(int BD = 1 ;BD < 29 ; ++BD){
+  //sprintf(title,"root_result/%iGeV.root",labelE);
+  //TFile f(title);
+  TFile f("TPro.root");
+  int MAXBD  = 28;
+  int MAXSKI = 4;
+  int MAXCH  = 32;
+  TCanvas *c1 = new TCanvas();
+  // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,500);
+  // sat_fit->SetParLimits(0,50,120);
+  // sat_fit->SetParLimits(1,2000,6000);
 
-  }
+  //TF1 *sat_fit = new TF1("2nd_try"," [0]*tanh(x*[1])",0,500);
+  //TF1 *sat_fit = new TF1("3rd_try"," [0]*([2]*x/(1+abs(x))+tanh(x*[1]))",0,500);
+  TF1 *sat_fit   = new TF1("4th_try","[0]*x",0,500);
+  double p0[MAXBD][MAXSKI][MAXCH];
+  //TF1 *sat_fit_2 = new TF1("4th_try_2","[0]*x+[1]",350,500);
   
+  for(int BD = 0 ;BD < MAXBD ; ++BD){
+    for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+      for(int CH = 0 ; CH < MAXCH ; ++CH){
+	p0[BD][SKI][CH] = -999;
+	int true_ch = CH*2;
+	sprintf(title,"Board_%i/HGLG_chip%i,ch%i",BD,SKI,true_ch);
+	TProfile *tpr = (TProfile *)f.Get(title);
+	if(tpr == NULL) continue;
+	tpr->SetName(title);
+	tpr->Draw();
+	tpr->Fit(sat_fit,"EMR");
+	//tpr->Fit(sat_fit_2,"EMR");
+	sat_fit->Draw("same");
+	sat_fit->SetLineColor(6);
+	p0[BD][SKI][CH] = sat_fit->GetParameter(0);
+	TH1D *h1 = new TH1D("cc","cc",400,0,4000);
+	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
+	  double x = tpr->GetBinCenter(i);
+	  if(x == 0) continue;
+	  double y = tpr->GetBinContent(i);
+	  double res = (x*p0[BD][SKI][CH] - y) / p0[BD][SKI][CH];
+	  h1->SetBinContent(i,res*1000+2000);
+	  h1->SetMarkerSize(1.2);
+	  h1->SetMarkerColor(6);
+	}
+	h1->Draw("samee");
+	//sat_fit_2->Draw("same");
+	//sat_fit_2->SetLineColor(7);
+	//tpr->Draw();
+	c1->Update();
+	getchar();
+      }
+    }
+  }
+
+  TMultiGraph *mgr;
+  TGraph *gr;
+  //  for(int BD = 0 ;BD < MAXBD ; ++BD){
+  int BD = 7;
+    mgr = new TMultiGraph();
+    for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+      vector<double> ch_arr;
+      vector<double> p0_arr;
+      for(int CH = 0 ; CH < MAXCH ; ++CH){
+	if(p0[BD][SKI][CH] != -999){
+	  ch_arr.push_back(CH*2);
+	  p0_arr.push_back(p0[BD][SKI][CH]);
+	}}
+      gr = new TGraph(ch_arr.size(),&ch_arr[0],&p0_arr[0]);
+      gr->SetMinimum(0);
+      gr->SetMarkerStyle(20);
+      gr->SetMarkerSize(1.2);
+      gr->SetMarkerColor(SKI+1);
+      mgr->Add(gr);
+    }
+    //}
+  mgr->Draw("AP");
+  c1->Update();
+  getchar();
 }
 
 

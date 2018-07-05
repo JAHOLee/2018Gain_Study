@@ -5,7 +5,7 @@ makePlots: main.o makePlots.o fitter.o
 	g++ $^ -o makePlots $(CXXFLAGS) $(ROOTFLAGS)
 	mv *.o obj_file
 
-main.o: main.cc makePlots.h
+main.o: main.cc makePlots.h fitter.h
 	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
 
 makePlots.o:makePlots.cc makePlots.h fitter.h
