@@ -150,9 +150,9 @@ void makePlots::Loop(){
   h_LGundershoot = new TH1D("LG_undershoot","LG_undershoot",40,0,20);
   h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
   
-  for(int i = 0 ; i < NLAYER; ++i)
-    Draw_HG_LG(i,0);
-
+  //for(int i = 0 ; i < NLAYER; ++i)
+  //  Draw_HG_LG(i,0);
+  Draw_HG_LG();
   h_LGundershoot->Draw();
   c1->Update();
   c1->SaveAs("LG_US.png");
