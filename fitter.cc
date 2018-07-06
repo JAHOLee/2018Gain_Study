@@ -24,23 +24,23 @@ void fitter::fit(int labelE = 10){
     cout << "invalid energy!" << endl;
     return;}
   char title[50];
-  sprintf(title,"root_result/%iGeV.root",labelE);
+  sprintf(title,"root_result/40Bin/%iGeV.root",labelE);
   TFile f(title);
   int MAXBD  = 28;
   int MAXSKI = 4;
   int MAXCH  = 32;
 
-  // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,500);
-  // sat_fit->SetParLimits(0,50,120);
-  // sat_fit->SetParLimits(1,2000,6000);
+   // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,800);
+   // sat_fit->SetParLimits(0,50,120);
+   // sat_fit->SetParLimits(1,2000,6000);
 
   //TF1 *sat_fit = new TF1("2nd_try"," [0]*tanh(x*[1])",0,500);
   //TF1 *sat_fit = new TF1("3rd_try"," [0]*([2]*x/(1+abs(x))+tanh(x*[1]))",0,500);
-  TF1 *sat_fit   = new TF1("4th_try","[0]*x",0,500);
+  //TF1 *sat_fit   = new TF1("4th_try","[0]*x",0,500);
   double p0[MAXBD][MAXSKI][MAXCH];
   //TF1 *sat_fit_2 = new TF1("4th_try_2","[0]*x+[1]",350,500);
   gStyle->SetOptStat(0);
-  TProfile *tpr = new TProfile("","",400,0,800,0,4000);
+  TProfile *tpr = new TProfile("","",40,0,800,0,4000);
   TH1D *h1 = new TH1D("","",tpr->GetNbinsX(),0,800);
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
@@ -65,14 +65,38 @@ void fitter::fit(int labelE = 10){
 	
 	h1->Reset();
 	//h1->Sumw2();
+	double fit_end;
+	bool left_most = false;
 	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
 	  if(x == 0 || y == 0) continue;
 	  //cout << "x = "<< x << ", y = " << y << endl;
-	  double res = ( y - x*p0[BD][SKI][CH]) / (x*p0[BD][SKI][CH]);
+	  double res = ( y - sat_fit->Eval(x)) / sat_fit->Eval(x);
+	  double error = tpr->GetBinError(i)/(x*p0[BD][SKI][CH]);
 	  h1->SetBinContent(i,res);
+	  h1->SetBinError(i,error);
+	  if( res < -0.05 && !left_most ) {
+	    left_most = true;
+	    fit_end = x;
+	  }
 	}
+
+	// TF1 *sat_fit2   = new TF1("4th_try2","[0]*x",0,fit_end);
+	// tpr->Fit(sat_fit2);
+
+	// for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
+	//   double x = tpr->GetBinCenter(i);
+	//   double y = tpr->GetBinContent(i);
+	//   if(x == 0 || y == 0) continue;
+	//   //cout << "x = "<< x << ", y = " << y << endl;
+	//   double res = ( y - x*p0[BD][SKI][CH]) / (x*p0[BD][SKI][CH]);
+	//   double error = tpr->GetBinError(i)/(x*p0[BD][SKI][CH]);
+	//   h1->SetBinContent(i,res);
+	//   h1->SetBinError(i,error);
+	// }
+		
+	
 	tpr->SetMarkerColor(SKI+1);
 	h1->SetMarkerStyle(20);
 	h1->SetMarkerSize(1.2);
@@ -333,7 +357,7 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   hratio->SetMinimum(-0.1); 
   //hratio->Draw();
   
-  hratio->GetYaxis()->SetTitle("#frac{Fit - HG}{Fit}");
+  hratio->GetYaxis()->SetTitle("#frac{HG - Fit}{Fit}");
   hratio->GetYaxis()->SetTitleOffset(0.35);
   hratio->GetYaxis()->SetLabelFont(43); 
   hratio->GetYaxis()->SetLabelSize(15);
