@@ -24,28 +24,33 @@ void fitter::fit(int labelE = 10){
     cout << "invalid energy!" << endl;
     return;}
   char title[50];
-  sprintf(title,"root_result/%iGeV.root",labelE);
+  sprintf(title,"root_result/40Bin/%iGeV.root",labelE);
   TFile f(title);
   int MAXBD  = 28;
   int MAXSKI = 4;
   int MAXCH  = 32;
 
-  // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,500);
-  // sat_fit->SetParLimits(0,50,120);
-  // sat_fit->SetParLimits(1,2000,6000);
+   // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,800);
+   // sat_fit->SetParLimits(0,50,120);
+   // sat_fit->SetParLimits(1,2000,6000);
 
   //TF1 *sat_fit = new TF1("2nd_try"," [0]*tanh(x*[1])",0,500);
   //TF1 *sat_fit = new TF1("3rd_try"," [0]*([2]*x/(1+abs(x))+tanh(x*[1]))",0,500);
-  TF1 *sat_fit   = new TF1("4th_try","[0]*x",0,500);
-  double p0[MAXBD][MAXSKI][MAXCH];
-  //TF1 *sat_fit_2 = new TF1("4th_try_2","[0]*x+[1]",350,500);
+  TF1 *sat_fit   = new TF1("4th_try","[0]*x",0,200);
+  double p0_ARR[MAXBD][MAXSKI][MAXCH];
+  double sat_ARR[MAXBD][MAXSKI][MAXCH];
+
+  TF1 *sat_fit2 = new TF1("4th_try_2","[0]*x+[1]",400,800);
   gStyle->SetOptStat(0);
-  TProfile *tpr = new TProfile("","",400,0,800,0,4000);
+  TProfile *tpr = new TProfile("","",40,0,800,0,4000);
   TH1D *h1 = new TH1D("","",tpr->GetNbinsX(),0,800);
+  bool savepng = false;
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       for(int CH = 0 ; CH < MAXCH ; ++CH){
-	p0[BD][SKI][CH] = -999;
+	p0_ARR[BD][SKI][CH] = -999;
+	sat_ARR[BD][SKI][CH] = -999;
+	sat_fit->SetRange(0,200);
 	int true_ch = CH*2;
 	sprintf(title,"Board_%i/HGLG_chip%i_ch%i",BD,SKI,true_ch);
 	tpr = (TProfile *)f.Get(title);
@@ -57,62 +62,166 @@ void fitter::fit(int labelE = 10){
 	//c1->Update();
 	//getchar();
 	
-	tpr->Fit(sat_fit,"EMR");
-	//tpr->Fit(sat_fit_2,"EMR");
+	tpr->Fit(sat_fit,"QEMR");
+	//tpr->Fit(sat_fit2,"QEMR");
 	sat_fit->Draw("same");
 	sat_fit->SetLineColor(6);
-	p0[BD][SKI][CH] = sat_fit->GetParameter(0);
 	
 	h1->Reset();
 	//h1->Sumw2();
+	double fit_end = 0;
+	//bool right_most = false;
 	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
 	  if(x == 0 || y == 0) continue;
 	  //cout << "x = "<< x << ", y = " << y << endl;
-	  double res = ( y - x*p0[BD][SKI][CH]) / (x*p0[BD][SKI][CH]);
+	  double res = ( y - sat_fit->Eval(x)) / sat_fit->Eval(x);
+	  double error = tpr->GetBinError(i)/sat_fit->Eval(x);
 	  h1->SetBinContent(i,res);
+	  h1->SetBinError(i,error);
+	  if( abs(res) < 0.05 && x > 200 ) {
+	    //left_most = true;
+	    fit_end = x;
+	  }
 	}
+
 	tpr->SetMarkerColor(SKI+1);
 	h1->SetMarkerStyle(20);
 	h1->SetMarkerSize(1.2);
 	h1->SetMarkerColor(SKI+1);
+	ratio_plot(tpr,sat_fit,h1);
+	if(savepng)
+	  c1->SaveAs("step1.png");
+	
+	sat_fit->SetRange(0,fit_end);
+        tpr->Fit(sat_fit,"QEMR");
+	sat_fit->Draw("same");
+	h1->Reset();
+	double sat_point = 0;
+	double sat_point_x = 0;
+	bool save_first = false;
+	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
+	  double x = tpr->GetBinCenter(i);
+	  double y = tpr->GetBinContent(i);
+	  if(x == 0 || y == 0) continue;
+	  //cout << "x = "<< x << ", y = " << y << endl;
+	  double res = ( y - sat_fit->Eval(x)) / sat_fit->Eval(x);
+	  double error = tpr->GetBinError(i)/(x*sat_fit->Eval(x));
+	  h1->SetBinContent(i,res);
+	  h1->SetBinError(i,error);
+	  if(res < 0 && y > 1400 && !save_first){
+	    sat_point   = sat_fit->Eval(tpr->GetBinCenter(i-1));
+	    sat_point_x = tpr->GetBinCenter(i-1);
+	    save_first = true;
+	  }
+	}
+	ratio_plot(tpr,sat_fit,h1);
+	if(savepng)
+	  c1->SaveAs("step2.png");
+	
+	// TF1 *sat_fit2   = new TF1("4th_try2","[0]*x",0,fit_end);
+	// tpr->Fit(sat_fit2);
+
+	// for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
+	//   double x = tpr->GetBinCenter(i);
+	//   double y = tpr->GetBinContent(i);
+	//   if(x == 0 || y == 0) continue;
+	//   //cout << "x = "<< x << ", y = " << y << endl;
+	//   double res = ( y - x*p0[BD][SKI][CH]) / (x*p0[BD][SKI][CH]);
+	//   double error = tpr->GetBinError(i)/(x*p0[BD][SKI][CH]);
+	//   h1->SetBinContent(i,res);
+	//   h1->SetBinError(i,error);
+	// }
+		
+	
 
 	//h1->Draw("e");
 	//sat_fit_2->Draw("same");
 	//sat_fit_2->SetLineColor(7);
 	//tpr->Draw();
-	ratio_plot(tpr,sat_fit,h1);
+	// sat_fit2->SetLineColor(7);
+	// sat_fit2->SetMarkerStyle(20);
+	// sat_fit2->SetMarkerSize(1.2);
+	// sat_fit2->Draw("same");
+	
+	TLine *Gline = new TLine(0,sat_point,tpr->GetXaxis()->GetXmax(),sat_point);
+	Gline->SetLineColor(1);
+	Gline->SetLineWidth(4.8);
+	//Gline->SetLineStyle(7);
+	pad1->cd();
+	Gline->Draw("same");  
+	c1->cd();
 	c1->Update();
-	getchar();
+	if(savepng)
+	  c1->SaveAs("step3.png");
+	
+	sat_fit->SetRange(0,sat_point_x);
+	tpr->Fit(sat_fit,"QEMR");
+	ratio_plot(tpr,sat_fit,h1);
+
+	pad1->cd();
+	Gline->Draw("same");  
+	c1->cd();
+	if(savepng)
+	  c1->SaveAs("step4.png");
+	
+	if(savepng)
+	  getchar();
+	p0_ARR[BD][SKI][CH] = sat_fit->GetParameter(0);
+	sat_ARR[BD][SKI][CH] = sat_point;
       }
     }
   }
 
-  TMultiGraph *mgr;
+  TMultiGraph *mgr[2];
   TGraph *gr;
-  //  for(int BD = 0 ;BD < MAXBD ; ++BD){
-  int BD = 7;
-    mgr = new TMultiGraph();
+  TGraph *gr_sat;
+  
+  for(int BD = 0 ;BD < MAXBD ; ++BD){
+    mgr[0] = new TMultiGraph();
+    mgr[1] = new TMultiGraph();
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       vector<double> ch_arr;
       vector<double> p0_arr;
+      vector<double> sat_arr;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
-	if(p0[BD][SKI][CH] != -999){
+	if(p0_ARR[BD][SKI][CH] != -999){
 	  ch_arr.push_back(CH*2);
-	  p0_arr.push_back(p0[BD][SKI][CH]);
-	}}
+	  p0_arr.push_back(p0_ARR[BD][SKI][CH]);
+	  sat_arr.push_back(sat_ARR[BD][SKI][CH]);}	  
+      }
       gr = new TGraph(ch_arr.size(),&ch_arr[0],&p0_arr[0]);
-      gr->SetMinimum(0);
       gr->SetMarkerStyle(20);
       gr->SetMarkerSize(1.2);
       gr->SetMarkerColor(SKI+1);
-      mgr->Add(gr);
+      mgr[0]->Add(gr);
+
+      gr_sat = new TGraph(ch_arr.size(),&ch_arr[0],&sat_arr[0]);
+      gr_sat->SetMarkerStyle(20);
+      gr_sat->SetMarkerSize(1.2);
+      gr_sat->SetMarkerColor(SKI+1);
+      mgr[1]->Add(gr_sat);
+      
     }
-    //}
-  mgr->Draw("AP");
-  c1->Update();
-  getchar();
+    mgr[0]->Draw("AP");
+    mgr[0]->SetXTitle("CH");
+    mgr[0]->SetYTitle("p1");
+    
+    c1->Update();
+    sprintf(title,"BD%i_p0.png",BD);
+    c1->SaveAs(title);
+    
+    mgr[1]->Draw("AP");
+    mgr[1]->SetXTitle("CH");
+    mgr[1]->SetYTitle("sat_point");
+
+    c1->Update();
+    sprintf(title,"BD%i_sat.png",BD);
+    c1->SaveAs(title);
+    
+    getchar();
+  }
 }
 
 
@@ -290,7 +399,7 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   
   //Ratio plot
   c1->cd();
-  TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
+  pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
   pad1->SetBottomMargin(0.02); // Upper and lower plot are joined
   pad1->SetGridx();         // Vertical grid
   pad1->Draw();             // Draw the upper pad: pad1
@@ -319,7 +428,7 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   // lower plot will be in pad
   c1->cd();          // Go back to the main canvas before defining pad2
 
-  TPad *pad2 = new TPad("pad2", "pad2", 0, 0, 1, 0.3);
+  pad2 = new TPad("pad2", "pad2", 0, 0, 1, 0.3);
   pad2->SetTopMargin(0.1);
   pad2->SetBottomMargin(0.2);
   pad2->SetGridx(); // vertical grid
@@ -333,7 +442,7 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   hratio->SetMinimum(-0.1); 
   //hratio->Draw();
   
-  hratio->GetYaxis()->SetTitle("#frac{Fit - HG}{Fit}");
+  hratio->GetYaxis()->SetTitle("#frac{HG - Fit}{Fit}");
   hratio->GetYaxis()->SetTitleOffset(0.35);
   hratio->GetYaxis()->SetLabelFont(43); 
   hratio->GetYaxis()->SetLabelSize(15);
@@ -363,7 +472,7 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   Gline->SetLineStyle(7);
   Gline->Draw();  
   c1->Update();
-  getchar();
+  //getchar();
 }
 
 void fitter::root_logon(){

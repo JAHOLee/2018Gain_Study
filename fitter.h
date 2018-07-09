@@ -31,6 +31,7 @@ class fitter{
  void fit_Draw();
  void root_logon();
  void ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio);
+ TPad *pad1,*pad2;
  vector<bool>   fit_remove;
  vector<double> HG_vec;
  vector<double> LG_vec;

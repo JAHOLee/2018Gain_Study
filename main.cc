@@ -5,9 +5,9 @@
 
 int main(){
   TApplication *app = new TApplication("app",0,0);
-  // fitter fit;
-  // fit.fit(10);
-  // return 0;
+  fitter fit;
+  fit.fit(100);
+  return 0;
 
   TChain *chain = new TChain("pulseshapeplotter/tree");
   
