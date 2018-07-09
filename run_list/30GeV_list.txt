@@ -1,4 +1,3 @@
-/eos/cms/store/group/dpg_hgcal/tb_hgcal/2018/cern_h2_june/HGCalTBRawHit/pulseshapeanalysis/HexaOutput_268_noCalib.root
 /eos/cms/store/group/dpg_hgcal/tb_hgcal/2018/cern_h2_june/HGCalTBRawHit/pulseshapeanalysis/HexaOutput_269_noCalib.root
 /eos/cms/store/group/dpg_hgcal/tb_hgcal/2018/cern_h2_june/HGCalTBRawHit/pulseshapeanalysis/HexaOutput_271_noCalib.root
 /eos/cms/store/group/dpg_hgcal/tb_hgcal/2018/cern_h2_june/HGCalTBRawHit/pulseshapeanalysis/HexaOutput_272_noCalib.root

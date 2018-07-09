@@ -30,6 +30,7 @@ class makePlots{
   int  PID; // 0 for electron, 1 for pion, 2 for muon
   string beam_str; // "Ele","Pi","Mu"
   string fname;
+  string dirpath;
   TCanvas *c1;
   
  private:
@@ -44,6 +45,7 @@ class makePlots{
   // Mainframe functions
   void Init();
   void Init_BeamE();
+  void begin();
 
   // Tool functions
   void Draw_HG_LG();

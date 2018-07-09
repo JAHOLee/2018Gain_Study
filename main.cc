@@ -12,6 +12,9 @@ int main(){
   TChain *chain = new TChain("pulseshapeplotter/tree");
   
   string filename;
+  //string dirpath = "/afs/cern.ch/user/c/chchien/HG_LG/";
+  string dirpath = "./";
+
   ifstream infile("input.txt");
   while(true){
     
@@ -27,6 +30,7 @@ int main(){
   infile.close();
 
   makePlots M(chain,filename);
+  M.dirpath = dirpath;
   M.Loop();
   return(0);
 }

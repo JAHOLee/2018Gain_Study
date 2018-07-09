@@ -24,10 +24,6 @@ makePlots::makePlots( TChain *c1 ,string filename):T_Rawhit(c1)
 {
   cout << "Constructor of makePlot ... \n\n" << endl;
   fname = filename;
-  ofstream of("LG_US.txt");
-  of << "BD\tchip\tCH\n";
-  of.close();
-  root_out = new TFile("TPro.root","recreate");
 }
 
 //Destructor
@@ -37,6 +33,15 @@ makePlots::~makePlots()
   cout << "\n\n";
   cout << "Destructor of makePlot ... " << endl;
 }
+
+void makePlots::begin(){
+  ofstream of(string(dirpath+string("LG_US.txt")).c_str());
+  of << "BD\tchip\tCH\n";
+  of.close();
+  root_out = new TFile(string(dirpath+string("TPro.root")).c_str(),"recreate");
+
+}
+
 
 bool makePlots::DBG(){
   return false;
@@ -114,9 +119,11 @@ void makePlots::Init_BeamE(){
 void makePlots::Loop(){
   int NLAYER = 28;
   root_logon();
+  begin();
   Init();
   gROOT->SetBatch(kTRUE);
   nevents = T_Rawhit->GetEntries();
+  
   c1 = new TCanvas();
   
   
@@ -151,11 +158,11 @@ void makePlots::Loop(){
   h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
   
   //for(int i = 0 ; i < NLAYER; ++i)
-  //  Draw_HG_LG(i,0);
+    //Draw_HG_LG(i,1);
   Draw_HG_LG();
   h_LGundershoot->Draw();
   c1->Update();
-  c1->SaveAs("LG_US.png");
+  c1->SaveAs(string(dirpath+string("LG_US.png")).c_str());
   
   root_out->cd();
   h_tprLGUS->Write("tprLGUS");
@@ -174,9 +181,9 @@ void makePlots::Draw_HG_LG(){
     for(int chip = 0 ; chip < MAXCHIP ; ++chip){
       for(int ch = 0 ; ch < MAXCH ;++ch){
 	sprintf(title,"HGLG_BD%i_chip%i_ch%i",BD,chip,ch*2);
-	tpr_HGLG[BD][chip][ch] = new TProfile(title,title,200,0,800,0,4000);
+	tpr_HGLG[BD][chip][ch] = new TProfile(title,title,400,0,800,0,4000);
 	sprintf(title,"LGTOT_BD%i_chip%i_ch%i",BD,chip,ch*2);
-	tpr_LGTOT[BD][chip][ch] = new TProfile(title,title,150,0,800,0,3000);
+	tpr_LGTOT[BD][chip][ch] = new TProfile(title,title,300,0,800,0,3000);
 	tpr_LS[BD][chip][ch] = 0;      }}}
   
   for(int ev = 0 ; ev < nevents ; ++ev){
@@ -225,7 +232,7 @@ void makePlots::Draw_HG_LG(){
 	if(tpr_LS[BD][chip][ch] != 0){
 	  double US_LG_percernt = tpr_LS[BD][chip][ch]*100./Hit_counter[BD][chip][ch];
 	  h_tprLGUS->Fill(US_LG_percernt);
-	  ofstream of("LG_US.txt", std::ios::app);
+	  ofstream of(string(dirpath+string("LG_US.txt")).c_str(), std::ios::app);
 	  of << BD << "\t" << chip << "\t" << ch*2 << "\t" << US_LG_percernt
 	     << endl;
 	  of.close();}	
@@ -250,27 +257,32 @@ void makePlots::Draw_HG_LG(int BD = 0,bool Draw_SCAT = 0){
   char title_sub[20];
 
   
-  vector< vector< vector< double > > > HG_vec,LG_vec,TOT_vec;
-  for(int chip = 0 ; chip < NCHIP ; ++chip){
-    HG_vec.resize(NCHIP);
-    LG_vec.resize(NCHIP);
-    TOT_vec.resize(NCHIP);
-    for(int ch = 0; ch < NCH ; ++ch){
-      HG_vec[chip].resize(NCH);
-      LG_vec[chip].resize(NCH);
-      TOT_vec[chip].resize(NCH);
-    }
-  }
-  cout << "staring Board " << BD << endl;
+   vector< vector< vector< double > > > HG_vec,LG_vec,TOT_vec;
+  // for(int chip = 0 ; chip < NCHIP ; ++chip){
+  //   HG_vec.resize(NCHIP);
+  //   LG_vec.resize(NCHIP);
+  //   TOT_vec.resize(NCHIP);
+  //   for(int ch = 0; ch < NCH ; ++ch){
+  //     HG_vec[chip].resize(NCH);
+  //     LG_vec[chip].resize(NCH);
+  //     TOT_vec[chip].resize(NCH);
+  //   }
+  // }
+   cout << "staring Board " << BD << endl;
+
   for(int ev = 0; ev < nevents; ++ev){
-    if(ev % 10000 == 0) cout << "processing evt " << ev << endl;
+    //if(ev % 10000 == 0) cout << "processing evt " << ev << endl;
+    cout << "processing evt " << ev << endl;
     T_Rawhit->GetEntry(ev);
-    for(int hit = 0 ;hit < (int)channelID->size(); ++hit ){
-      if(boardID->at(hit) != BD) continue;
-      HG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(HighGainADC->at(hit));
-      LG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(LowGainADC->at(hit));
-      TOT_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(TotSlow->at(hit));}
+    //for(int hit = 0 ;hit < (int)channelID->size(); ++hit ){
+      //if(boardID->at(hit) != BD) continue;
+      //cout << skirocID->at(hit) << "," << channelID->at(hit)/2 << "," << HighGainADC->at(hit);
+      //HG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(HighGainADC->at(hit));
+      //LG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(LowGainADC->at(hit));
+      //TOT_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(TotSlow->at(hit));
+      cout << "finish pushing " << ev << endl;
   }
+
     //}
   if(Draw_SCAT){  
 
@@ -282,18 +294,17 @@ void makePlots::Draw_HG_LG(int BD = 0,bool Draw_SCAT = 0){
       leg = new TLegend(0.65,0.13,0.9,0.4);
       leg->SetBorderSize(0);
 
-      if( Hit_counter[BD][0][ch] < 500 ||  Hit_counter[BD][1][ch] < 500) continue;
-      if( Hit_counter[BD][2][ch] < 500 ||  Hit_counter[BD][3][ch] < 500) continue;
-
       for(int chip = 0 ; chip < NCHIP ; ++chip){
- 
+	if( Hit_counter[BD][chip][ch] < 1000 ) continue;
+
+	
 	gr = new TGraph(HG_vec[chip][ch].size(),&LG_vec[chip][ch][0],&HG_vec[chip][ch][0]);
 	//cout << HG_vec[chip][ch].size() << endl;
 	//cout << LG_vec[chip][ch].size() << endl;
       
-	fitter f(gr,HG_vec[chip][ch],LG_vec[chip][ch],TOT_vec[chip][ch]);
-	f.fit_Graph();
-	h_LGundershoot->Fill(f.undershoot_percent);
+	//fitter f(gr,HG_vec[chip][ch],LG_vec[chip][ch],TOT_vec[chip][ch]);
+	//f.fit_Graph();
+	//h_LGundershoot->Fill(f.undershoot_percent);
 	gr->Draw("AP");
 	gr->SetMarkerStyle(20);
 	gr->SetMarkerSize(0.2);
@@ -302,15 +313,7 @@ void makePlots::Draw_HG_LG(int BD = 0,bool Draw_SCAT = 0){
 	sprintf(title_sub,"chip%i",chip);
 	leg->AddEntry(gr,title_sub,"P");
 	mgr->Add(gr);
-      
-	if(f.undershoot_percent > 2){
-	  ofstream of("LG_US.txt", std::ios::app);
-	  of << "BD ,chip, CH " << BD << "," << chip << "," << ch*2
-	     << " LG_US = " << f.undershoot_percent << endl;
-	  of.close();}
-      
-      }
-
+      } 
       mgr->Draw("AP");
       mgr->GetYaxis()->SetTitle("HG(ADC)");
       mgr->GetYaxis()->SetTitleOffset(1.2);
@@ -320,63 +323,13 @@ void makePlots::Draw_HG_LG(int BD = 0,bool Draw_SCAT = 0){
       leg->SetHeader(title);
       leg->Draw("same");
       c1->Update();
-      sprintf(title,"plot_out/BD_%iCH%i.png",BD,ch*2);
+      sprintf(title,"~/HG_LG/plot_out/BD_%iCH%i.png",BD,ch*2);
       if(save_png)
 	c1->SaveAs(title);
     }
   }
   
-  TProfile *tpr_HGLG;
-  TProfile *tpr_LGTOT;
-  
-  //root_out->cd();
-  TDirectory *dir = new TDirectory();
-  sprintf(title,"Board_%i",BD);
-  dir = root_out->mkdir(title);
-  dir->cd();
-  for(int chip = 0 ; chip < NCHIP ; ++chip){
-    for(int ch = 0 ; ch < NCH ;++ch){
-      if(HG_vec[chip][ch].size() < 1000) continue;
-      tpr_HGLG  = new TProfile("Tpro","Tpro",40,0,800,0,4000);
-      tpr_LGTOT = new TProfile("Tpro2","Tpro2",40,0,800,0,4000);
-      
-      int tpr_LS = 0;
-      for(size_t i = 0; i < HG_vec[chip][ch].size(); ++i){
-	if(LG_vec[chip][ch].at(i) < 20 && HG_vec[chip][ch].at(i) > 200)
-	  tpr_LS++;
-	if(LG_vec[chip][ch].at(i) < 20) continue;
-	
-        tpr_HGLG->Fill(LG_vec[chip][ch].at(i),HG_vec[chip][ch].at(i),1);
-	tpr_LGTOT->Fill(TOT_vec[chip][ch].at(i),LG_vec[chip][ch].at(i));
-      }
-      
-      tpr_HGLG->SetMarkerStyle(20);
-      tpr_HGLG->SetMarkerSize(1.2);
-      tpr_HGLG->SetMarkerColor(chip+1);
-      
-      tpr_HGLG->Draw("e");
-      c1->Update();
-      
-      tpr_HGLG->Draw("esame");
-      c1->Update();
-      sprintf(title,"HGLG_chip%i,ch%i",chip,ch*2);
-      tpr_HGLG->Write(title);
-      sprintf(title,"LGTOT_chip%i,ch%i",chip,ch*2);
-      tpr_LGTOT->Write(title);
-      
-      delete tpr_HGLG;
-      delete tpr_LGTOT;
-      //getchar();
-      if(tpr_LS != 0){
-	//cout << tpr_LS*100./LG_vec[chip][ch].size() << endl;
-	h_tprLGUS->Fill(tpr_LS*100./LG_vec[chip][ch].size());
-	ofstream of("LG_US.txt", std::ios::app);
-	of << BD << "\t" << chip << "\t" << ch*2
-	   << "\t" <<  tpr_LS*100./LG_vec[chip][ch].size() << endl;
-	of.close();
-      }
-    }
-  }
+
 }
  
 

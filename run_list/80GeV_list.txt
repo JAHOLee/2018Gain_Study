@@ -39,5 +39,4 @@
 /eos/cms/store/group/dpg_hgcal/tb_hgcal/2018/cern_h2_june/HGCalTBRawHit/pulseshapeanalysis/HexaOutput_365_noCalib.root
 /eos/cms/store/group/dpg_hgcal/tb_hgcal/2018/cern_h2_june/HGCalTBRawHit/pulseshapeanalysis/HexaOutput_366_noCalib.root
 /eos/cms/store/group/dpg_hgcal/tb_hgcal/2018/cern_h2_june/HGCalTBRawHit/pulseshapeanalysis/HexaOutput_367_noCalib.root
-/eos/cms/store/group/dpg_hgcal/tb_hgcal/2018/cern_h2_june/HGCalTBRawHit/pulseshapeanalysis/HexaOutput_369_noCalib.root
 /eos/cms/store/group/dpg_hgcal/tb_hgcal/2018/cern_h2_june/HGCalTBRawHit/pulseshapeanalysis/HexaOutput_371_noCalib.root
