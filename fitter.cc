@@ -552,7 +552,7 @@ TH1D* fitter::qualify( double ARR[MAXBD][MAXSKI][MAXCH],int option){
       vector<double> data;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	data.push_back(ARR[BD][SKI][CH]);}
-      sort( data.begin(), data.end() );
+      std::sort( data.begin(), data.end() );
       double sigma_first = 0.16;
       double sigma_last  = 0.84;
       double sigma = data[data.size()*sigma_last]-data[data.size()*sigma_first];
