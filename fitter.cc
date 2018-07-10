@@ -1,9 +1,12 @@
 #include "fitter.h"
 #include "TFile.h"
+#include "TTree.h"
 #include "TROOT.h"
 #include "TLine.h"
 #include "TMultiGraph.h"
 #include "TStyle.h"
+#include "TLegend.h"
+
 fitter::fitter(TGraph *in_gr,vector<double> HG,vector<double> LG,vector<double> TOT){
   c1 = new TCanvas();
   gr = in_gr;
@@ -24,11 +27,8 @@ void fitter::fit(int labelE = 10){
     cout << "invalid energy!" << endl;
     return;}
   char title[50];
-  sprintf(title,"root_result/40Bin/%iGeV.root",labelE);
+  sprintf(title,"root_result/400Bin/%iGeV.root",labelE);
   TFile f(title);
-  int MAXBD  = 28;
-  int MAXSKI = 4;
-  int MAXCH  = 32;
 
    // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,800);
    // sat_fit->SetParLimits(0,50,120);
@@ -36,32 +36,51 @@ void fitter::fit(int labelE = 10){
 
   //TF1 *sat_fit = new TF1("2nd_try"," [0]*tanh(x*[1])",0,500);
   //TF1 *sat_fit = new TF1("3rd_try"," [0]*([2]*x/(1+abs(x))+tanh(x*[1]))",0,500);
-  TF1 *sat_fit   = new TF1("4th_try","[0]*x",0,200);
+  TF1 *sat_fit   = new TF1("4th_try","[0]*x+[1]",50,150);
+  sat_fit->SetParLimits(1,-50,50);
   double p0_ARR[MAXBD][MAXSKI][MAXCH];
+  double p1_ARR[MAXBD][MAXSKI][MAXCH];
   double sat_ARR[MAXBD][MAXSKI][MAXCH];
+  bool   sat_good[MAXBD][MAXSKI][MAXCH];
 
-  TF1 *sat_fit2 = new TF1("4th_try_2","[0]*x+[1]",400,800);
   gStyle->SetOptStat(0);
-  TProfile *tpr = new TProfile("","",40,0,800,0,4000);
+  TProfile *tpr = (TProfile *)f.Get("Board_7/HGLG_chip2_ch44");
+  //  TProfile *tpr = new TProfile("","",200,0,800,0,4000);
   TH1D *h1 = new TH1D("","",tpr->GetNbinsX(),0,800);
-  bool savepng = false;
+  int rebinN = 2;
+  h1->Rebin(rebinN);
+  bool savepng = 0;
+  int stop_and_look = -1;
+  gROOT->SetBatch(kTRUE);
+
   for(int BD = 0 ;BD < MAXBD ; ++BD){
+    cout << "BD "<< BD << endl;
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+      cout << "SKI "<< SKI << endl;
+      //if( BD == 8 && (SKI ==2 || SKI ==3))
+      //stop_and_look = 1;
+      //else
+      //stop_and_look = -1;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	p0_ARR[BD][SKI][CH] = -999;
+	p1_ARR[BD][SKI][CH] = -999;
 	sat_ARR[BD][SKI][CH] = -999;
-	sat_fit->SetRange(0,200);
+	sat_fit->SetRange(50,150);
+        
 	int true_ch = CH*2;
 	sprintf(title,"Board_%i/HGLG_chip%i_ch%i",BD,SKI,true_ch);
 	tpr = (TProfile *)f.Get(title);
 	if(tpr == NULL) continue;
+
+	tpr->Rebin(rebinN);
+	
 	int nentry = tpr->GetEntries();
 	if( nentry < 1000 ) continue;
 	tpr->SetName(title);
 	//tpr->Draw();
 	//c1->Update();
 	//getchar();
-	
+ 
 	tpr->Fit(sat_fit,"QEMR");
 	//tpr->Fit(sat_fit2,"QEMR");
 	sat_fit->Draw("same");
@@ -69,8 +88,8 @@ void fitter::fit(int labelE = 10){
 	
 	h1->Reset();
 	//h1->Sumw2();
-	double fit_end = 0;
-	//bool right_most = false;
+	double fit_start = 0,fit_end = 0;
+	bool right_most = false,left_most = false;
 	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
@@ -80,10 +99,15 @@ void fitter::fit(int labelE = 10){
 	  double error = tpr->GetBinError(i)/sat_fit->Eval(x);
 	  h1->SetBinContent(i,res);
 	  h1->SetBinError(i,error);
-	  if( abs(res) < 0.05 && x > 200 ) {
-	    //left_most = true;
+	  if( abs(res) < 0.03 && x > 200 && !right_most) {
+	    right_most = true;
 	    fit_end = x;
 	  }
+	  if( abs(res) < 0.03 && x < 70 && !left_most) {
+	    left_most = true;
+	    fit_start = x;
+	  }
+
 	}
 
 	tpr->SetMarkerColor(SKI+1);
@@ -91,16 +115,18 @@ void fitter::fit(int labelE = 10){
 	h1->SetMarkerSize(1.2);
 	h1->SetMarkerColor(SKI+1);
 	ratio_plot(tpr,sat_fit,h1);
+	if(stop_and_look == 0)
+	  getchar();
 	if(savepng)
 	  c1->SaveAs("step1.png");
 	
-	sat_fit->SetRange(0,fit_end);
+	sat_fit->SetRange(fit_start,fit_end);
         tpr->Fit(sat_fit,"QEMR");
 	sat_fit->Draw("same");
 	h1->Reset();
 	double sat_point = 0;
 	double sat_point_x = 0;
-	bool save_first = false;
+	
 	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
@@ -109,16 +135,55 @@ void fitter::fit(int labelE = 10){
 	  double res = ( y - sat_fit->Eval(x)) / sat_fit->Eval(x);
 	  double error = tpr->GetBinError(i)/(x*sat_fit->Eval(x));
 	  h1->SetBinContent(i,res);
-	  h1->SetBinError(i,error);
-	  if(res < 0 && y > 1400 && !save_first){
-	    sat_point   = sat_fit->Eval(tpr->GetBinCenter(i-1));
-	    sat_point_x = tpr->GetBinCenter(i-1);
-	    save_first = true;
-	  }
-	}
+	  h1->SetBinError(i,error);	}
+	
 	ratio_plot(tpr,sat_fit,h1);
+	if(stop_and_look == 0)
+	  getchar();
+	
 	if(savepng)
 	  c1->SaveAs("step2.png");
+
+	double lowx,lowy,highx,highy;
+	Find_low(h1,&lowx,&lowy);
+	Find_high(h1,&highx,&highy);
+	//cout << lowx << " , " << sat_fit->Eval(lowx) << endl;
+	//cout << highx << " , " << sat_fit->Eval(highx) << endl;
+	sat_fit->SetRange(lowx,fit_end);
+	tpr->Fit(sat_fit,"QEMR");
+	ratio_plot(tpr,sat_fit,h1);
+	sat_point_x = highx;
+	sat_point   = sat_fit->Eval(highx);
+
+	double thres = Calc_avg(h1,lowx,highx);
+	
+	if(stop_and_look == 0)
+	  getchar();
+
+	sat_good[BD][SKI][CH] = Find_sat(tpr,h1,&sat_point,&sat_point_x,thres);
+	
+	h1->Reset();
+	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
+	  double x = tpr->GetBinCenter(i);
+	  double y = tpr->GetBinContent(i);
+	  if(x == 0 || y == 0) continue;
+	  //cout << "x = "<< x << ", y = " << y << endl;
+	  double res = ( y - sat_fit->Eval(x)) / sat_fit->Eval(x);
+	  double error = tpr->GetBinError(i)/(x*sat_fit->Eval(x));
+	  h1->SetBinContent(i,res);
+	  h1->SetBinError(i,error);	 
+	}
+
+	//sat_good[BD][SKI][CH] = Find_sat(tpr,h1,&sat_point,&sat_point_x);
+	/*
+	if( sat_fit->Eval(highx) < sat_point || sat_point < 500 ){	  
+	  sat_point_x = highx;
+	  sat_point   = sat_fit->Eval(highx);	}
+	*/
+
+	//ratio_plot(tpr,sat_fit,h1);
+	//cout << "coooooooooooool" << endl;
+	//getchar();
 	
 	// TF1 *sat_fit2   = new TF1("4th_try2","[0]*x",0,fit_end);
 	// tpr->Fit(sat_fit2);
@@ -144,7 +209,7 @@ void fitter::fit(int labelE = 10){
 	// sat_fit2->SetMarkerStyle(20);
 	// sat_fit2->SetMarkerSize(1.2);
 	// sat_fit2->Draw("same");
-	
+	ratio_plot(tpr,sat_fit,h1);
 	TLine *Gline = new TLine(0,sat_point,tpr->GetXaxis()->GetXmax(),sat_point);
 	Gline->SetLineColor(1);
 	Gline->SetLineWidth(4.8);
@@ -153,44 +218,68 @@ void fitter::fit(int labelE = 10){
 	Gline->Draw("same");  
 	c1->cd();
 	c1->Update();
+	
+	if(stop_and_look == 0)
+	  getchar();
 	if(savepng)
 	  c1->SaveAs("step3.png");
 	
-	sat_fit->SetRange(0,sat_point_x);
+	sat_fit->SetRange(lowx,sat_point_x);
 	tpr->Fit(sat_fit,"QEMR");
 	ratio_plot(tpr,sat_fit,h1);
-
+	
 	pad1->cd();
 	Gline->Draw("same");  
 	c1->cd();
+	c1->Update();
+	
+	if(stop_and_look == 1)
+	  getchar();
+	
 	if(savepng)
 	  c1->SaveAs("step4.png");
 	
 	if(savepng)
 	  getchar();
-	p0_ARR[BD][SKI][CH] = sat_fit->GetParameter(0);
-	sat_ARR[BD][SKI][CH] = sat_point;
+	
+	//if( sat_point > 2000 || sat_point < 500) getchar();
+	if( sat_point < 500 || sat_fit->GetParameter(0) < 6 ||sat_point > 2400){
+	  p0_ARR[BD][SKI][CH] = -999;
+	  p1_ARR[BD][SKI][CH] = -999;
+	  sat_ARR[BD][SKI][CH] = -999;
+	  sat_good[BD][SKI][CH] = false;	}
+	
+	else{
+	  p0_ARR[BD][SKI][CH] = sat_fit->GetParameter(0);
+	  p1_ARR[BD][SKI][CH] = sat_fit->GetParameter(1);
+	  sat_ARR[BD][SKI][CH] = sat_point;}
       }
     }
   }
 
-  TMultiGraph *mgr[2];
+  TMultiGraph *mgr[3];
   TGraph *gr;
   TGraph *gr_sat;
+  TLegend *leg;
   
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     mgr[0] = new TMultiGraph();
     mgr[1] = new TMultiGraph();
+    mgr[2] = new TMultiGraph();
+    leg = new TLegend(0.7,0.7,0.87,0.87);
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       vector<double> ch_arr;
       vector<double> p0_arr;
+      vector<double> p1_arr;
       vector<double> sat_arr;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	if(p0_ARR[BD][SKI][CH] != -999){
 	  ch_arr.push_back(CH*2);
 	  p0_arr.push_back(p0_ARR[BD][SKI][CH]);
+	  p1_arr.push_back(p1_ARR[BD][SKI][CH]);
 	  sat_arr.push_back(sat_ARR[BD][SKI][CH]);}	  
       }
+      
       gr = new TGraph(ch_arr.size(),&ch_arr[0],&p0_arr[0]);
       gr->SetMarkerStyle(20);
       gr->SetMarkerSize(1.2);
@@ -202,28 +291,230 @@ void fitter::fit(int labelE = 10){
       gr_sat->SetMarkerSize(1.2);
       gr_sat->SetMarkerColor(SKI+1);
       mgr[1]->Add(gr_sat);
+
+      gr_sat = new TGraph(ch_arr.size(),&ch_arr[0],&p1_arr[0]);
+      gr_sat->SetMarkerStyle(20);
+      gr_sat->SetMarkerSize(1.2);
+      gr_sat->SetMarkerColor(SKI+1);
+      mgr[2]->Add(gr_sat);
+
+      sprintf(title,"chip %i",SKI);
+      leg->AddEntry(gr,title,"P");
       
     }
     mgr[0]->Draw("AP");
-    mgr[0]->SetXTitle("CH");
-    mgr[0]->SetYTitle("p1");
+    mgr[0]->GetXaxis()->SetTitle("CH");
+    mgr[0]->GetYaxis()->SetTitle("p1");
+    mgr[0]->SetMaximum(13);
+    leg->Draw("same");
     
     c1->Update();
-    sprintf(title,"BD%i_p0.png",BD);
+    sprintf(title,"plot_out/%iGeV/BD%i_p1.png",labelE,BD);
     c1->SaveAs(title);
+
+    mgr[2]->Draw("AP");
+    mgr[2]->GetXaxis()->SetTitle("CH");
+    mgr[2]->GetYaxis()->SetTitle("p0");
+    mgr[2]->SetMaximum(40);
+    mgr[2]->SetMinimum(-40);
+    leg->Draw("same");
+    
+    c1->Update();
+    sprintf(title,"plot_out/%iGeV/BD%i_p0.png",labelE,BD);
+    c1->SaveAs(title);
+
     
     mgr[1]->Draw("AP");
-    mgr[1]->SetXTitle("CH");
-    mgr[1]->SetYTitle("sat_point");
-
+    mgr[1]->GetXaxis()->SetTitle("CH");
+    mgr[1]->GetXaxis()->SetTitle("sat_point");
+    mgr[1]->SetMaximum(3000);
+      
+    leg->Draw("same");
     c1->Update();
-    sprintf(title,"BD%i_sat.png",BD);
+    sprintf(title,"plot_out/%iGeV/BD%i_sat.png",labelE,BD);
     c1->SaveAs(title);
     
-    getchar();
+    //getchar();
   }
+
+
+  //Modify the wrong ones
+  double p0_avg[MAXBD][MAXSKI];
+  double p1_avg[MAXBD][MAXSKI];
+  double sat_avg[MAXBD][MAXSKI];
+  int    count_avg[MAXBD][MAXSKI];
+  
+  for(int BD = 0 ;BD < MAXBD ; ++BD){
+    for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+      p0_avg[BD][SKI] = 0;
+      p1_avg[BD][SKI] = 0;
+      sat_avg[BD][SKI] = 0;
+      count_avg[BD][SKI] = 0;    }}
+
+  for(int BD = 0 ;BD < MAXBD ; ++BD){
+    for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+      for(int CH = 0 ; CH < MAXCH ; ++CH){
+	if(sat_ARR[BD][SKI][CH] == -999) continue;
+	p0_avg[BD][SKI]    += p0_ARR[BD][SKI][CH];
+	p1_avg[BD][SKI]    += p1_ARR[BD][SKI][CH];
+	sat_avg[BD][SKI]   += sat_ARR[BD][SKI][CH];
+	count_avg[BD][SKI] += 1;
+      }
+      p0_avg[BD][SKI]  /= count_avg[BD][SKI];
+      p1_avg[BD][SKI]  /= count_avg[BD][SKI];
+      sat_avg[BD][SKI] /= count_avg[BD][SKI];
+    }
+  }
+  sprintf(title,"HGLG_sat_%iGeV.root",labelE);
+  TFile outf(title,"recreate");
+  TTree *outtree = new TTree("tree","tree");
+  int layerID,skirocID,channelID;
+  double m_p0,m_p1,m_sat;
+  bool   m_goodsat;
+
+  outtree->Branch("layerID",&layerID,"layerID/I");
+  outtree->Branch("skirocID",&skirocID,"skirocID/I");
+  outtree->Branch("channelID",&channelID,"channelID/I");
+  outtree->Branch("p0",&m_p0,"p0/D");
+  outtree->Branch("p1",&m_p1,"p1/D");
+  outtree->Branch("p_saturation",&m_sat,"p_saturation/D");
+  outtree->Branch("good_saturation",&m_goodsat,"good_saturation/O");
+  
+  
+  for(int BD = 0 ;BD < MAXBD ; ++BD){
+    for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+      for(int CH = 0 ; CH < MAXCH ; ++CH){
+	if( sat_ARR[BD][SKI][CH] == -999 ){
+	  layerID  = BD;
+	  skirocID = SKI;
+	  channelID = CH*2;
+	  m_p0  = p1_avg[BD][SKI];
+	  m_p1  = p0_avg[BD][SKI];
+	  m_sat = sat_avg[BD][SKI];
+	  m_goodsat = false;
+	  outtree->Fill();	}
+	else{
+	  layerID  = BD;
+	  skirocID = SKI;
+	  channelID = CH*2;
+	  m_p0  = p1_ARR[BD][SKI][CH];
+	  m_p1  = p0_ARR[BD][SKI][CH];
+	  m_sat = sat_ARR[BD][SKI][CH];
+	  m_goodsat = sat_good[BD][SKI][CH];
+	  outtree->Fill();}
+      }
+    }
+  }
+
+  TH1D* hp0 = qualify(p1_ARR,2); //Actually p0
+  TH1D* hp1 = qualify(p0_ARR,0); //Actually p1
+  TH1D* hsat = qualify(sat_ARR,1);
+  hp0->SetTitle("p0_qualify");
+  hp0->SetName("p0_qualify");
+  hp1->SetTitle("p1_qualify");
+  hp1->SetName("p1_qualify");
+  hsat->SetTitle("sat_qualify");
+  hsat->SetName("sat_qualify");
+
+  
+  sprintf(title,"plot_out/%iGeV/p0_hist.png",labelE);
+  hp0 ->Draw(); c1->Update(); c1->SaveAs(title);
+  sprintf(title,"plot_out/%iGeV/p1_hist.png",labelE);
+  hp1 ->Draw(); c1->Update(); c1->SaveAs(title);
+  sprintf(title,"plot_out/%iGeV/sat_hist.png",labelE);
+  hsat->Draw(); c1->Update(); c1->SaveAs(title);
+
+  outf.Write();
+  outf.Close();
+  
+}
+  
+void fitter::Find_low(TH1D* h1,double* lowx,double* lowy){
+  double lowerbound = 100;
+  int Nbin = h1->GetNbinsX ();
+  double minx = 1,miny = 1;
+  for(int i = 0 ; i < Nbin ; ++i){
+    double x = h1->GetBinCenter(i);
+    double y = h1->GetBinContent(i);
+    if(y < miny && x < lowerbound){
+      minx = x;
+      miny = y;    }
+  }
+  *lowx = minx;
+  *lowy = miny;
+}
+void fitter::Find_high(TH1D* h1,double* highx,double* highy){
+  double lowerbound = 200;
+  double upperbound = 300;
+  
+  int Nbin = h1->GetNbinsX ();
+  double maxx = -1,maxy = -1;
+  for(int i = 0 ; i < Nbin ; ++i){
+    double x = h1->GetBinCenter(i);
+    double y = h1->GetBinContent(i);
+    if(y > maxy && x > lowerbound && x < upperbound){
+      maxx = x;
+      maxy = y;    }
+  }
+  *highx = maxx;
+  *highy = maxy;
 }
 
+bool fitter::Find_sat(TProfile *tpr, TH1D* h1 , double *sat,double *sat_x,double thres){
+  int Nbin = tpr->GetNbinsX ();
+  int keeplow;
+  bool ret_first = false;
+  
+  for(int i = 0 ; i < Nbin; ++i){
+    double x = h1->GetBinCenter(i);
+    double y = h1->GetBinContent(i);
+    keeplow = 0;
+    for( int check = 0 ; check < 5 ; ++check){
+      if( check+i == Nbin ) break;
+      if( h1->GetBinContent(i+check) < thres )
+	keeplow++;    }
+    if( x > 200 && y < thres - 0.01 && keeplow >= 3 && !ret_first){
+      *sat   = tpr->GetBinContent(i);
+      *sat_x = tpr->GetBinCenter(i);
+      ret_first = true;
+      if( *sat != 0 ) return true;
+    }
+  }
+  /*
+  if( *sat == 0 )
+  for(int i = 0 ; i < Nbin; ++i){
+    double x = h1->GetBinCenter(i);
+    double y = h1->GetBinContent(i);
+    if( x > 150 && y < - 0.01 && !ret_first){
+      *sat   = tpr->GetBinContent(i);
+      *sat_x = tpr->GetBinCenter(i);
+      ret_first = true;
+      if( *sat != 0 ) return true;
+    }
+  }
+  */
+  *sat   = -999;
+  *sat_x = -999;
+  cout << "fail!" << endl;
+  return false;
+    
+}
+
+double fitter::Calc_avg(TH1D* h1 , double min,double max){
+  int Nbin = h1->GetNbinsX ();
+  int    member = 0;
+  double sum    = 0;
+
+  for(int i = 0 ; i < Nbin; ++i){
+    double x = h1->GetBinCenter(i);
+    double y = h1->GetBinContent(i);
+    if(x >= min && x <= max){
+      member++;
+      sum += y;    }
+  }
+  sum /= member;
+  return sum;
+}
 
 void fitter::fit_Graph(){
   int npoint = gr->GetN();
@@ -244,17 +535,47 @@ void fitter::fit_Graph(){
   //fit_Draw();
 }
 
+TH1D* fitter::qualify( double ARR[MAXBD][MAXSKI][MAXCH],int option){
+  TH1D *h_qua;
+  if(option == 0)
+    h_qua = new TH1D("","",20,0,0.1);
+  else if(option == 1)
+    h_qua = new TH1D("","",80,0,0.4);
+  else if(option == 2)
+    h_qua = new TH1D("","",200,0,1);
+  else{
+    cout << "wrong input option, return NULL!" << endl;
+    return NULL;  }
+  cout << "==============================" << endl;
+  for(int BD = 0 ;BD < MAXBD ; ++BD){
+    for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+      vector<double> data;
+      for(int CH = 0 ; CH < MAXCH ; ++CH){
+	data.push_back(ARR[BD][SKI][CH]);}
+      sort( data.begin(), data.end() );
+      double sigma_first = 0.16;
+      double sigma_last  = 0.84;
+      double sigma = data[data.size()*sigma_last]-data[data.size()*sigma_first];
+      double median= data[data.size()*0.5];
+      if (median < 0) median = -median;
+      double quality = sigma/median;
+      h_qua->Fill(quality);
+    }
+  }
+  return h_qua;
+}
+
 void fitter::fit_Draw(){
   
 
   TF1 *fit = new TF1("fit","pol1",0,500);
-  TMultiGraph *mgr = new TMultiGraph();
 
   gr->Fit(fit,"0EMR");
   gr->SetMarkerStyle(20);
   gr->SetMarkerSize(0.2);
   
   /*
+  TMultiGraph *mgr = new TMultiGraph();
   TGraph *g_res = new TGraph(fit_res.size(),&LG_vec[0],&fit_res[0]);
   g_res->Draw("AP");
   g_res->SetMaximum(0.5);
@@ -394,6 +715,7 @@ void fitter::fit_Draw(){
 
 
 }
+
 
 void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   

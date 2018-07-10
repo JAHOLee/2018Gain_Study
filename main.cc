@@ -6,7 +6,9 @@
 int main(){
   TApplication *app = new TApplication("app",0,0);
   fitter fit;
-  fit.fit(100);
+  int Ene_arr[6] = {10,30,50,80,100,150};
+  for(int i = 0 ;i < (int)sizeof(Ene_arr)/sizeof(int) ; ++i){
+    fit.fit(Ene_arr[i]);}
   return 0;
 
   TChain *chain = new TChain("pulseshapeplotter/tree");

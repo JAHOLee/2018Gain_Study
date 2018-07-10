@@ -8,6 +8,11 @@
 #include "TF1.h"
 #include <vector>
 
+const int MAXBD  = 28;
+const int MAXSKI = 4;
+const int MAXCH  = 32;
+
+
 using namespace std;
 class fitter{
  public:
@@ -31,7 +36,15 @@ class fitter{
  void fit_Draw();
  void root_logon();
  void ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio);
- TPad *pad1,*pad2;
+
+ void Find_low(TH1D* h1,double* lowx,double* lowy);
+ void Find_high(TH1D* h1,double* highx,double* highy);
+ bool Find_sat(TProfile *tpr, TH1D* h1, double *sat,double *sat_x,double thres);
+ double Calc_avg(TH1D* h1 , double min,double max);
+ TH1D* qualify(double ARR[MAXBD][MAXSKI][MAXCH],int option);
+
+ 
+  TPad *pad1,*pad2;
  vector<bool>   fit_remove;
  vector<double> HG_vec;
  vector<double> LG_vec;
