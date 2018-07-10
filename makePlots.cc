@@ -158,7 +158,7 @@ void makePlots::Loop(){
   h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
   
   //for(int i = 0 ; i < NLAYER; ++i)
-    //Draw_HG_LG(i,1);
+    //Draw_HG_LG(i);
   Draw_HG_LG();
   h_LGundershoot->Draw();
   c1->Update();
@@ -248,87 +248,73 @@ void makePlots::Draw_HG_LG(){
   
 }
 
-void makePlots::Draw_HG_LG(int BD = 0,bool Draw_SCAT = 0){
-  bool save_png = false;
-  //if(Hit_counter[BD][chip][ch] < 1000) return NULL;
+void makePlots::Draw_HG_LG(int BD = 0){
+  bool save_png = true;
+
   int NCHIP = 4;
   int NCH   = 32;
   char title[50];
   char title_sub[20];
 
+  cout << "staring Board " << BD << endl;
+
   
-   vector< vector< vector< double > > > HG_vec,LG_vec,TOT_vec;
-  // for(int chip = 0 ; chip < NCHIP ; ++chip){
-  //   HG_vec.resize(NCHIP);
-  //   LG_vec.resize(NCHIP);
-  //   TOT_vec.resize(NCHIP);
-  //   for(int ch = 0; ch < NCH ; ++ch){
-  //     HG_vec[chip].resize(NCH);
-  //     LG_vec[chip].resize(NCH);
-  //     TOT_vec[chip].resize(NCH);
-  //   }
-  // }
-   cout << "staring Board " << BD << endl;
-
-  for(int ev = 0; ev < nevents; ++ev){
-    //if(ev % 10000 == 0) cout << "processing evt " << ev << endl;
-    cout << "processing evt " << ev << endl;
-    T_Rawhit->GetEntry(ev);
-    //for(int hit = 0 ;hit < (int)channelID->size(); ++hit ){
-      //if(boardID->at(hit) != BD) continue;
-      //cout << skirocID->at(hit) << "," << channelID->at(hit)/2 << "," << HighGainADC->at(hit);
-      //HG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(HighGainADC->at(hit));
-      //LG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(LowGainADC->at(hit));
-      //TOT_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(TotSlow->at(hit));
-      cout << "finish pushing " << ev << endl;
-  }
-
-    //}
-  if(Draw_SCAT){  
-
-    TGraph  *gr;
-    TMultiGraph  *mgr;
-    TLegend *leg;
+  vector< vector< vector< double > > > HG_vec,LG_vec,TOT_vec;
+  for(int chip = 0 ; chip < NCHIP ; ++chip){
+    HG_vec.resize(NCHIP);
+    LG_vec.resize(NCHIP);
+    TOT_vec.resize(NCHIP);
     for(int ch = 0; ch < NCH ; ++ch){
-      mgr = new TMultiGraph();
-      leg = new TLegend(0.65,0.13,0.9,0.4);
-      leg->SetBorderSize(0);
-
-      for(int chip = 0 ; chip < NCHIP ; ++chip){
-	if( Hit_counter[BD][chip][ch] < 1000 ) continue;
-
-	
-	gr = new TGraph(HG_vec[chip][ch].size(),&LG_vec[chip][ch][0],&HG_vec[chip][ch][0]);
-	//cout << HG_vec[chip][ch].size() << endl;
-	//cout << LG_vec[chip][ch].size() << endl;
-      
-	//fitter f(gr,HG_vec[chip][ch],LG_vec[chip][ch],TOT_vec[chip][ch]);
-	//f.fit_Graph();
-	//h_LGundershoot->Fill(f.undershoot_percent);
-	gr->Draw("AP");
-	gr->SetMarkerStyle(20);
-	gr->SetMarkerSize(0.2);
-	gr->SetMarkerColor(chip+1);
-      
-	sprintf(title_sub,"chip%i",chip);
-	leg->AddEntry(gr,title_sub,"P");
-	mgr->Add(gr);
-      } 
-      mgr->Draw("AP");
-      mgr->GetYaxis()->SetTitle("HG(ADC)");
-      mgr->GetYaxis()->SetTitleOffset(1.2);
-      mgr->GetXaxis()->SetTitle("LG(ADC)");
-    
-      sprintf(title,"Board_%iCH%i",BD,ch*2);
-      leg->SetHeader(title);
-      leg->Draw("same");
-      c1->Update();
-      sprintf(title,"~/HG_LG/plot_out/BD_%iCH%i.png",BD,ch*2);
-      if(save_png)
-	c1->SaveAs(title);
-    }
-  }
+      HG_vec[chip].resize(NCH);
+      LG_vec[chip].resize(NCH);
+      TOT_vec[chip].resize(NCH);     }   }
+   
+  for(int ev = 0; ev < nevents; ++ev){
+    if(ev % 10000 == 0) cout << "processing evt " << ev << endl;
+    T_Rawhit->GetEntry(ev);
+    for(int hit = 0 ;hit < (int)channelID->size(); ++hit ){
+      if(boardID->at(hit) != BD) continue;
+      cout << skirocID->at(hit) << "," << channelID->at(hit)/2 << "," << HighGainADC->at(hit);
+      HG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(HighGainADC->at(hit));
+      LG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(LowGainADC->at(hit));
+      TOT_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(TotSlow->at(hit));     }}
+   
   
+  TGraph  *gr;
+  TMultiGraph  *mgr;
+  TLegend *leg;
+  for(int ch = 0; ch < NCH ; ++ch){
+    mgr = new TMultiGraph();
+    leg = new TLegend(0.65,0.13,0.9,0.4);
+    leg->SetBorderSize(0);
+
+    for(int chip = 0 ; chip < NCHIP ; ++chip){
+      if( Hit_counter[BD][chip][ch] < 1000 ) continue;
+	
+      gr = new TGraph(HG_vec[chip][ch].size(),&LG_vec[chip][ch][0],&HG_vec[chip][ch][0]);
+      
+      gr->Draw("AP");
+      gr->SetMarkerStyle(20);
+      gr->SetMarkerSize(0.2);
+      gr->SetMarkerColor(chip+1);
+      
+      sprintf(title_sub,"chip%i",chip);
+      leg->AddEntry(gr,title_sub,"P");
+      mgr->Add(gr);
+    } 
+    mgr->Draw("AP");
+    mgr->GetYaxis()->SetTitle("HG(ADC)");
+    mgr->GetYaxis()->SetTitleOffset(1.2);
+    mgr->GetXaxis()->SetTitle("LG(ADC)");
+    
+    sprintf(title,"Board_%iCH%i",BD,ch*2);
+    leg->SetHeader(title);
+    leg->Draw("same");
+    c1->Update();
+    sprintf(title,"~/HG_LG/plot_out/scatter/BD_%iCH%i.png",BD,ch*2);
+    if(save_png)
+      c1->SaveAs(title);
+  }
 
 }
  

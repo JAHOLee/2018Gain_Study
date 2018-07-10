@@ -49,7 +49,7 @@ class makePlots{
 
   // Tool functions
   void Draw_HG_LG();
-  void Draw_HG_LG(int BD,bool Draw_SCAT);
+  void Draw_HG_LG(int BD);
   void InitTH2Poly(TH2Poly& poly); //Give frame to TH2Poly
   void root_logon();
 
