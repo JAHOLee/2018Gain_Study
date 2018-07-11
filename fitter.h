@@ -12,7 +12,6 @@ const int MAXBD  = 28;
 const int MAXSKI = 4;
 const int MAXCH  = 32;
 
-
 using namespace std;
 class fitter{
  public:
@@ -44,7 +43,7 @@ class fitter{
  TH1D* qualify(double ARR[MAXBD][MAXSKI][MAXCH],int option);
 
  
-  TPad *pad1,*pad2;
+ TPad *pad1,*pad2;
  vector<bool>   fit_remove;
  vector<double> HG_vec;
  vector<double> LG_vec;

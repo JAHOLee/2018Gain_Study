@@ -1,11 +1,11 @@
 CXXFLAGS=-g -m64 -O2 -Wall
 ROOTFLAGS=$(shell root-config --libs --cflags --glibs)
 
-makePlots: main.o makePlots.o fitter.o
+makePlots: main.o makePlots.o fitter.o compare.o
 	g++ $^ -o makePlots $(CXXFLAGS) $(ROOTFLAGS)
 	mv *.o obj_file
 
-main.o: main.cc makePlots.h fitter.h
+main.o: main.cc makePlots.h fitter.h compare.h
 	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
 
 makePlots.o:makePlots.cc makePlots.h fitter.h
@@ -13,6 +13,11 @@ makePlots.o:makePlots.cc makePlots.h fitter.h
 
 fitter.o:fitter.cc fitter.h
 	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
+
+compare.o:compare.cc compare.h
+	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
+
+
 
 clean:
 	rm -f makePlots obj_file/*.o ./*~
