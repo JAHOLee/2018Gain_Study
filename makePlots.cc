@@ -147,7 +147,8 @@ void makePlots::Loop(){
       m_BDID  = boardID->at(hit);
       m_SKIID = skirocID->at(hit);
       m_CHID  = channelID->at(hit)/2;
-      Hit_counter[m_BDID][m_SKIID][m_CHID]++;
+      if( LowGainADC->at(hit) >= 50 && LowGainADC->at(hit) <= 150)
+	Hit_counter[m_BDID][m_SKIID][m_CHID]++;
       if(HighGainStatus->at(hit) == 1) count_1++;
       else count_0++;}
   }
@@ -157,9 +158,9 @@ void makePlots::Loop(){
   h_LGundershoot = new TH1D("LG_undershoot","LG_undershoot",40,0,20);
   h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
   
-  for(int i = 0 ; i < NLAYER; ++i)
-    Draw_HG_LG(i);
-  //Draw_HG_LG();
+  //for(int i = 0 ; i < NLAYER; ++i)
+     // Draw_HG_LG(i);
+  Draw_HG_LG();
   h_LGundershoot->Draw();
   c1->Update();
   c1->SaveAs(string(dirpath+string("LG_US.png")).c_str());
@@ -230,7 +231,7 @@ void makePlots::Draw_HG_LG(){
 	tpr_LGTOT[BD][chip][ch]->Write(title);
   
 	if(tpr_LS[BD][chip][ch] != 0){
-	  double US_LG_percernt = tpr_LS[BD][chip][ch]*100./Hit_counter[BD][chip][ch];
+	  double US_LG_percernt = tpr_LS[BD][chip][ch]*100./tpr_HGLG[BD][chip][ch]->GetEntries();
 	  h_tprLGUS->Fill(US_LG_percernt);
 	  ofstream of(string(dirpath+string("LG_US.txt")).c_str(), std::ios::app);
 	  of << BD << "\t" << chip << "\t" << ch*2 << "\t" << US_LG_percernt

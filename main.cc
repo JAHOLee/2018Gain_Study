@@ -6,9 +6,9 @@
 
 int main(){
   TApplication *app = new TApplication("app",0,0);
-  compare com;
-  com.compare_Ene();
-  return 0;
+  //compare com;
+  //com.compare_Ene();
+ 
   // fitter fit;
   // int Ene_arr[6] = {10,30,50,80,100,150};
   // for(int i = 0 ;i < (int)sizeof(Ene_arr)/sizeof(int) ; ++i){
