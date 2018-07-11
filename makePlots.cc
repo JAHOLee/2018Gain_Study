@@ -157,9 +157,9 @@ void makePlots::Loop(){
   h_LGundershoot = new TH1D("LG_undershoot","LG_undershoot",40,0,20);
   h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
   
-  //for(int i = 0 ; i < NLAYER; ++i)
-    //Draw_HG_LG(i);
-  Draw_HG_LG();
+  for(int i = 0 ; i < NLAYER; ++i)
+    Draw_HG_LG(i);
+  //Draw_HG_LG();
   h_LGundershoot->Draw();
   c1->Update();
   c1->SaveAs(string(dirpath+string("LG_US.png")).c_str());
@@ -274,7 +274,6 @@ void makePlots::Draw_HG_LG(int BD = 0){
     T_Rawhit->GetEntry(ev);
     for(int hit = 0 ;hit < (int)channelID->size(); ++hit ){
       if(boardID->at(hit) != BD) continue;
-      cout << skirocID->at(hit) << "," << channelID->at(hit)/2 << "," << HighGainADC->at(hit);
       HG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(HighGainADC->at(hit));
       LG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(LowGainADC->at(hit));
       TOT_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(TotSlow->at(hit));     }}
@@ -290,10 +289,9 @@ void makePlots::Draw_HG_LG(int BD = 0){
 
     for(int chip = 0 ; chip < NCHIP ; ++chip){
       if( Hit_counter[BD][chip][ch] < 1000 ) continue;
-	
       gr = new TGraph(HG_vec[chip][ch].size(),&LG_vec[chip][ch][0],&HG_vec[chip][ch][0]);
       
-      gr->Draw("AP");
+      //gr->Draw("AP");
       gr->SetMarkerStyle(20);
       gr->SetMarkerSize(0.2);
       gr->SetMarkerColor(chip+1);
@@ -301,17 +299,18 @@ void makePlots::Draw_HG_LG(int BD = 0){
       sprintf(title_sub,"chip%i",chip);
       leg->AddEntry(gr,title_sub,"P");
       mgr->Add(gr);
-    } 
+    }
+     
     mgr->Draw("AP");
-    mgr->GetYaxis()->SetTitle("HG(ADC)");
-    mgr->GetYaxis()->SetTitleOffset(1.2);
-    mgr->GetXaxis()->SetTitle("LG(ADC)");
+    mgr->SetTitle(";LG(ADC);HG(ADC)");
+    
     
     sprintf(title,"Board_%iCH%i",BD,ch*2);
-    leg->SetHeader(title);
     leg->Draw("same");
+    leg->SetHeader(title);
     c1->Update();
     sprintf(title,"~/HG_LG/plot_out/scatter/BD_%iCH%i.png",BD,ch*2);
+    
     if(save_png)
       c1->SaveAs(title);
   }

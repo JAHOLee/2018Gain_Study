@@ -6,6 +6,7 @@
 #include "TMultiGraph.h"
 #include "TStyle.h"
 #include "TLegend.h"
+#include <algorithm>
 
 fitter::fitter(TGraph *in_gr,vector<double> HG,vector<double> LG,vector<double> TOT){
   c1 = new TCanvas();
