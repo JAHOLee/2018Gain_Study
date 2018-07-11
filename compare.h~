@@ -1,0 +1,33 @@
+#ifndef compare_h
+#define compare_h
+
+#include "TFile.h"
+#include <string>
+#include "fitter.h"
+
+
+using namespace std;
+const int MAXLABEL = 6;
+
+class compare{
+ public:
+  compare();
+  ~compare();
+  void compare_Ene(int method);
+  
+
+ private:
+  
+  void store_GR(string fname,int label);
+
+  
+  TGraph *gr_p0[MAXLABEL][MAXBD];
+  TGraph *gr_p1[MAXLABEL][MAXBD];
+  TGraph *gr_sat[MAXLABEL][MAXBD];
+
+  char title[100];
+
+  
+};
+
+#endif
