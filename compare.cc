@@ -5,7 +5,6 @@
 #include <vector>
 #include <array>
 
-
 compare::compare(){
   c1 = new TCanvas();
 }
@@ -41,7 +40,7 @@ void compare::compare_Ene(int method){
     mgr->Draw("sameAP");
     
     sprintf(title,"Board%i",BD);
-    leg->SetHeader(title,"C");
+    leg->SetHeader(title);
     leg->Draw("same");
     c1->Update();
     getchar();  
@@ -79,7 +78,7 @@ void compare::store_GR(string fname,int label){
   
   int nentry = tt->GetEntries();
 
-  array< vector<double>, MAXBD> p0_vec,p1_vec,sat_vec,X_vec;
+  std::array< vector<double>, MAXBD> p0_vec,p1_vec,sat_vec,X_vec;
   for(int data = 0 ; data < nentry ; ++data){
     tt->GetEntry(data);
     if(!good_saturation) continue;
