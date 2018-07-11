@@ -27,15 +27,17 @@ class fitter{
  double p1;
  double sat_point;
  double undershoot_percent;
+
  
  private:
  
  TGraph *gr;
  TCanvas *c1;
  void fit_Draw();
- void root_logon();
  void ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio);
+ void root_logon();
 
+ 
  void Find_low(TH1D* h1,double* lowx,double* lowy);
  void Find_high(TH1D* h1,double* highx,double* highy);
  bool Find_sat(TProfile *tpr, TH1D* h1, double *sat,double *sat_x,double thres);

@@ -22,7 +22,6 @@ fitter::fitter(){
 fitter::~fitter(){
 }
 void fitter::fit(int labelE = 10){
-  root_logon();
   if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
        || labelE == 100 || labelE == 150 )) {
     cout << "invalid energy!" << endl;
