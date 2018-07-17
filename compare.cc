@@ -2,8 +2,10 @@
 #include "TLegend.h"
 #include "TTree.h"
 #include "TROOT.h"
+#include "TStyle.h"
 #include <vector>
 #include <array>
+
 
 compare::compare(){
   c1 = new TCanvas();
@@ -12,11 +14,173 @@ compare::~compare(){}
 
 void compare::compare_Ene(int method){
 
-  if(method != 1) return;
+  //if(method != 1) return;
   int Ene[6] = {10 , 30 ,50 ,80 ,100 ,150};
-  for(int i = 0 ; i < 6 ; ++i){
-    sprintf(title,"Linear_result/HGLG_sat_%iGeV.root",Ene[i]);
-    store_GR(string(title),i);}
+  for(int i = 0 ; i < 12 ; ++i){
+    if(Ene[i%6] == 10 || Ene[i%6] == 30 || Ene[i%6] == 150) continue;
+    // if(i == 6){
+    //   sprintf(title,"Linear_result/HGLG_sat_all.root");
+    //   store_GR(string(title),i);}
+    if(i < 6){
+      sprintf(title,"Linear_result/HGLG_sat_%iGeV.root",Ene[i]);
+      store_GR(string(title),i);}
+    else{
+      sprintf(title,"Spline_result/HGLG_sat_Spline_%iGeV.root",Ene[i%6]);
+      store_GR(string(title),i);}
+  }
+
+
+  bool savepng = true;
+
+  for(int BD = 0; BD < MAXBD ; ++BD){
+    TMultiGraph *mgr = new TMultiGraph();
+    TLegend *leg = new TLegend(0.65,0.65,0.87,0.87);
+    leg->SetBorderSize(0);
+    for(int lab = 0 ; lab < MAXLABEL ; ++lab){
+      if(gr_p0[lab][BD] == NULL) continue;
+      if(Ene[lab%6] == 10 || Ene[lab%6] == 30 || Ene[lab%6] == 150) continue;
+      if(lab < 6)
+	gr_p0[lab][BD]->SetMarkerStyle(20);
+      else
+	gr_p0[lab][BD]->SetMarkerStyle(22);
+      gr_p0[lab][BD]->SetMarkerSize(0.8);
+      gr_p0[lab][BD]->SetMarkerColor((lab+1)%6);
+      mgr->Add(gr_p0[lab][BD],"P");
+      if( lab < 6 )
+	sprintf(title,"Linear_%iGeV",Ene[lab%6]);
+      else
+	sprintf(title,"Spline_%iGeV",Ene[lab%6]);
+      leg->AddEntry(gr_p0[lab][BD],title,"P");
+    }
+    
+    string titlex("skiroc*32+channel/2");
+    string titley("p0");
+    Set_mgr(*mgr,titlex,titley);
+
+    mgr->SetMaximum(50);
+    mgr->SetMinimum(-50);
+
+    mgr->Draw("sameAP");
+    sprintf(title,"Board%i",BD);
+    leg->SetHeader(title,"C");
+    leg->Draw("same");
+    c1->Update();
+    sprintf(title,"plot_out/EnergyComp/BD%i_p0.png",BD);
+    if(savepng)
+      c1->SaveAs(title);
+  }
+
+  for(int BD = 0; BD < MAXBD ; ++BD){
+    TMultiGraph *mgr = new TMultiGraph();
+    TLegend *leg = new TLegend(0.65,0.65,0.87,0.87);
+    leg->SetBorderSize(0);
+    for(int lab = 0 ; lab < MAXLABEL ; ++lab){
+      if(gr_p1[lab][BD] == NULL) continue;
+      if(Ene[lab%6] == 10 || Ene[lab%6] == 30 || Ene[lab%6] == 150) continue;
+      if(lab < 6)
+	gr_p1[lab][BD]->SetMarkerStyle(20);
+      else
+	gr_p1[lab][BD]->SetMarkerStyle(22);
+      gr_p1[lab][BD]->SetMarkerSize(0.8);
+      gr_p1[lab][BD]->SetMarkerColor((lab+1)%6);
+      mgr->Add(gr_p1[lab][BD],"P");
+      if( lab < 6 )
+	sprintf(title,"Linear_%iGeV",Ene[lab%6]);
+      else
+	sprintf(title,"Spline_%iGeV",Ene[lab%6]);
+      leg->AddEntry(gr_p1[lab][BD],title,"P");
+    }
+    
+    string titlex("skiroc*32+channel/2");
+    string titley("p1");
+    Set_mgr(*mgr,titlex,titley);
+
+    mgr->SetMaximum(10);
+
+    mgr->Draw("sameAP");
+    sprintf(title,"Board%i",BD);
+    leg->SetHeader(title,"C");
+    leg->Draw("same");
+    c1->Update();
+    sprintf(title,"plot_out/EnergyComp/BD%i_p1.png",BD);
+    if(savepng)
+      c1->SaveAs(title);
+  }
+
+  for(int BD = 0; BD < MAXBD ; ++BD){
+    TMultiGraph *mgr = new TMultiGraph();
+    TLegend *leg = new TLegend(0.65,0.65,0.87,0.87);
+    leg->SetBorderSize(0);
+    for(int lab = 0 ; lab < MAXLABEL ; ++lab){
+      if(gr_sat[lab][BD] == NULL) continue;
+      if(Ene[lab%6] == 10 || Ene[lab%6] == 30 || Ene[lab%6] == 150) continue;
+      if(lab < 6)
+	gr_sat[lab][BD]->SetMarkerStyle(20);
+      else
+	gr_sat[lab][BD]->SetMarkerStyle(22);
+      gr_sat[lab][BD]->SetMarkerSize(0.8);
+      gr_sat[lab][BD]->SetMarkerColor((lab+1)%6);
+      mgr->Add(gr_sat[lab][BD],"P");
+      if( lab < 6 )
+	sprintf(title,"Linear_%iGeV",Ene[lab%6]);
+      else
+	sprintf(title,"Spline_%iGeV",Ene[lab%6]);
+      leg->AddEntry(gr_sat[lab][BD],title,"P");
+    }
+    
+    string titlex("skiroc*32+channel/2");
+    string titley("sat");
+    Set_mgr(*mgr,titlex,titley);
+
+    mgr->SetMaximum(2500);
+    mgr->SetMinimum(1500);
+
+    mgr->Draw("sameAP");
+    sprintf(title,"Board%i",BD);
+    leg->SetHeader(title,"C");
+    leg->Draw("same");
+    c1->Update();
+    sprintf(title,"plot_out/EnergyComp/BD%i_sat.png",BD);
+    if(savepng)
+      c1->SaveAs(title);
+  }
+  
+
+  /*  
+  for(int BD = 0; BD < MAXBD ; ++BD){
+    TMultiGraph *mgr = new TMultiGraph();
+    TLegend *leg = new TLegend(0.65,0.65,0.87,0.87);
+    leg->SetBorderSize(0);
+    for(int lab = 0 ; lab < MAXLABEL ; ++lab){
+      if(gr_p0[lab][BD] == NULL) continue;
+      gr_p0[lab][BD]->SetMarkerStyle(20);
+      gr_p0[lab][BD]->SetMarkerSize(0.8);
+      gr_p0[lab][BD]->SetMarkerColor(lab+1);
+      mgr->Add(gr_p0[lab][BD],"P");
+      if( lab == 6 )
+	sprintf(title,"Energy_all");
+      else
+	sprintf(title,"Energy_%iGeV",Ene[lab%6]);
+      leg->AddEntry(gr_p0[lab][BD],title,"P");
+    }
+    
+    string titlex("skiroc*32+channel/2");
+    string titley("p0");
+    Set_mgr(*mgr,titlex,titley);
+
+    mgr->SetMaximum(50);
+    mgr->SetMinimum(-50);
+
+    mgr->Draw("sameAP");
+    sprintf(title,"Board%i",BD);
+    leg->SetHeader(title,"C");
+    leg->Draw("same");
+    c1->Update();
+    sprintf(title,"plot_out/EnergyComp/BD%i_p0.png",BD);
+    if(savepng)
+      c1->SaveAs(title);
+  }
+
   
   for(int BD = 0; BD < MAXBD ; ++BD){
     TMultiGraph *mgr = new TMultiGraph();
@@ -28,7 +192,10 @@ void compare::compare_Ene(int method){
       gr_p1[lab][BD]->SetMarkerSize(0.8);
       gr_p1[lab][BD]->SetMarkerColor(lab+1);
       mgr->Add(gr_p1[lab][BD],"P");
-      sprintf(title,"Energy_%iGeV",Ene[lab%6]);
+      if( lab == 6)
+	sprintf(title,"Energy_all");
+      else
+	sprintf(title,"Energy_%iGeV",Ene[lab%6]);
       leg->AddEntry(gr_p1[lab][BD],title,"P");
     }
     
@@ -38,13 +205,49 @@ void compare::compare_Ene(int method){
 
     mgr->SetMaximum(10);
     mgr->Draw("sameAP");
-    
     sprintf(title,"Board%i",BD);
-    leg->SetHeader(title);
+    leg->SetHeader(title,"C");
     leg->Draw("same");
     c1->Update();
-    getchar();  
+    sprintf(title,"plot_out/EnergyComp/BD%i_p1.png",BD);
+    if(savepng)
+      c1->SaveAs(title);
   }
+
+
+    for(int BD = 0; BD < MAXBD ; ++BD){
+    TMultiGraph *mgr = new TMultiGraph();
+    TLegend *leg = new TLegend(0.65,0.65,0.87,0.87);
+    leg->SetBorderSize(0);
+    for(int lab = 0 ; lab < MAXLABEL ; ++lab){
+      if(gr_sat[lab][BD] == NULL) continue;
+      gr_sat[lab][BD]->SetMarkerStyle(20);
+      gr_sat[lab][BD]->SetMarkerSize(0.8);
+      gr_sat[lab][BD]->SetMarkerColor(lab+1);
+      mgr->Add(gr_sat[lab][BD],"P");
+      if( lab == 6)
+	sprintf(title,"Energy_all");
+      else
+	sprintf(title,"Energy_%iGeV",Ene[lab%6]);
+      leg->AddEntry(gr_sat[lab][BD],title,"P");
+    }
+    
+    string titlex("skiroc*32+channel/2");
+    string titley("sat");
+    Set_mgr(*mgr,titlex,titley);
+
+    mgr->SetMaximum(2500);
+    mgr->SetMinimum(1000);
+    mgr->Draw("sameAP");
+    sprintf(title,"Board%i",BD);
+    leg->SetHeader(title,"C");
+    leg->Draw("same");
+    c1->Update();
+    sprintf(title,"plot_out/EnergyComp/BD%i_sat.png",BD);
+    if(savepng)
+      c1->SaveAs(title);
+  }
+  */
 }
 
 void compare::store_GR(string fname,int label){
@@ -123,3 +326,90 @@ void compare::Set_mgr(TMultiGraph& mgr,string xtitle,string ytitle){
   ay->SetTitleFont(32);
   ay->SetTitleOffset(0.8);
 }
+void compare::compare_method(int Ene){
+  
+  fitter::root_logon();
+  sprintf(title,"HGLG_sat_%iGeV.root",Ene);
+  TFile f_linear(title);
+  sprintf(title,"HGLG_sat_Spline_%iGeV.root",Ene);
+  TFile f_spline(title);
+
+  TTree *T_linear = (TTree*)f_linear.Get("tree");
+  TTree *T_spline = (TTree*)f_spline.Get("tree");
+
+  TH1D *h[2][3];
+  for(int i = 0 ; i < 2 ; ++i){
+      h[i][0] = new TH1D("","",100,-50,50);
+      h[i][1] = new TH1D("","",40,6,10);
+      h[i][2] = new TH1D("","",120,1200,2400);
+  }
+  
+  double p0,p1,sat;
+  bool   goodsat;
+  T_linear->SetBranchAddress("p0",&p0);
+  T_linear->SetBranchAddress("p1",&p1);
+  T_linear->SetBranchAddress("p_saturation",&sat);
+  T_linear->SetBranchAddress("good_saturation",&goodsat);
+
+  T_spline->SetBranchAddress("p0",&p0);
+  T_spline->SetBranchAddress("p1",&p1);
+  T_spline->SetBranchAddress("p_saturation",&sat);
+  T_spline->SetBranchAddress("good_saturation",&goodsat);
+
+
+  for(int i = 0 ;i < T_linear->GetEntries();++i ){
+    T_linear->GetEntry(i);
+    if(goodsat){
+      h[0][0]->Fill(p0);
+      h[0][1]->Fill(p1);
+      h[0][2]->Fill(sat);
+    }
+  }
+  
+  for(int i = 0 ;i < T_spline->GetEntries();++i ){
+    T_spline->GetEntry(i);
+    if(goodsat){
+      h[1][0]->Fill(p0);
+      h[1][1]->Fill(p1);
+      h[1][2]->Fill(sat);
+    }
+  }
+  
+  TLegend *leg = new TLegend(0.6,0.65,0.87,0.87);
+  leg->SetBorderSize(0);
+  gStyle->SetOptStat(0);
+  for(int i = 0 ; i < 3 ; ++i){
+    
+    if( i == 0){
+      leg->SetHeader("P0","C");
+      leg->AddEntry(h[0][i],"Linear","L");
+      leg->AddEntry(h[1][i],"Spline","L");
+      h[0][i]->SetXTitle("P0");}
+    
+    else if( i == 1){
+      leg->SetHeader("P1","C");
+      h[0][i]->SetXTitle("P1");}
+    else if( i == 2){
+      leg->SetHeader("saturation_point","C");
+      h[0][i]->SetXTitle("saturationP(HGADC)");}
+
+    h[1][i]->SetLineColor(2);
+
+    h[0][i]->SetLineWidth(2.5);
+    h[1][i]->SetLineWidth(2.5);
+    
+    h[0][i]->SetMaximum( h[0][i]->GetMaximum()*1.4 );
+    h[0][i]->Draw();
+    h[1][i]->Draw("same");
+    leg->Draw("same");
+    c1->Update();
+    if(i == 0) c1->SaveAs("compare_p0.png");
+    if(i == 1) c1->SaveAs("compare_p1.png");
+    if(i == 2) c1->SaveAs("compare_sat.png");
+
+    //c1->WaitPrimitive();
+  }
+  
+  
+}
+

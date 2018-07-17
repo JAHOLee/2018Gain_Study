@@ -8,14 +8,14 @@
 #include "TMultiGraph.h"
 
 using namespace std;
-const int MAXLABEL = 6;
+const int MAXLABEL = 12;
 
-class compare{
+class compare : public fitter{
  public:
   compare();
   ~compare();
   void compare_Ene(int method = 1);
-  
+  void compare_method(int Ene = 100);
 
  private:
   

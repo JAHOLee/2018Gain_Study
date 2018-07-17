@@ -200,7 +200,7 @@ void makePlots::Draw_HG_LG(){
       ch   /= 2;
       BD   = boardID->at(hit);
       if( HG > 200 && LG < 20) tpr_LS[BD][chip][ch]++;
-      if( LG < 20 ) continue;
+      if( LG < 5 ) continue;
       tpr_HGLG[BD][chip][ch]->Fill(LG,HG,1);
       tpr_LGTOT[BD][chip][ch]->Fill(TOT,LG,1);
     }

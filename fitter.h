@@ -21,6 +21,9 @@ class fitter{
   
  void fit_Graph();
  void fit(int labelE);
+ void fit_spline(int labelE);
+ void root_logon();
+
  
  bool   status;
  double p0;
@@ -35,17 +38,21 @@ class fitter{
  TCanvas *c1;
  void fit_Draw();
  void ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio);
- void root_logon();
-
  
  void Find_low(TH1D* h1,double* lowx,double* lowy);
  void Find_high(TH1D* h1,double* highx,double* highy);
  bool Find_sat(TProfile *tpr, TH1D* h1, double *sat,double *sat_x,double thres);
  double Calc_avg(TH1D* h1 , double min,double max);
  TH1D* qualify(double ARR[MAXBD][MAXSKI][MAXCH],int option);
-
+ double spline_4nodes(double *x, double *par);
+ void pol4(TProfile *tpr);
+ TH1D* TSpline_2nd_deri(TH1D *h_deri,double* sat_x);
+ double first_P_lower_thres(TH1D* hist,double thres,double lowerbond,double upperbond);
+ vector<double> findzeros(TH1D* hist);
+ 
  
  TPad *pad1,*pad2;
+
  vector<bool>   fit_remove;
  vector<double> HG_vec;
  vector<double> LG_vec;
