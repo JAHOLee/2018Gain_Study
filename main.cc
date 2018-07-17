@@ -6,7 +6,7 @@
 
 int main(){
   TApplication *app = new TApplication("app",0,0);
-  fitter fit;
+  // fitter fit;
   // fit.fit(100);
   // fit.fit_spline(100);
   // int Ene_arr[6] = {10,30,50,80,100,150};
@@ -15,10 +15,10 @@ int main(){
   //   fit.fit_spline(Ene_arr[i]);
   // }
 
-   compare com;
-   com.compare_Ene();
+  // compare com;
+  // com.compare_Ene();
   // com.compare_method();
-  return 0;
+  //return 0;
 
   TChain *chain = new TChain("pulseshapeplotter/tree");
   

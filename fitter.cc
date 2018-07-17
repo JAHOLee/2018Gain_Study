@@ -9,6 +9,9 @@
 #include <algorithm>
 #include "TSpline.h"
 
+const int MINPOINT = 5;
+const int MAXPOINT = 40;
+
 fitter::fitter(TGraph *in_gr,vector<double> HG,vector<double> LG,vector<double> TOT){
   c1 = new TCanvas();
   gr = in_gr;
@@ -28,7 +31,7 @@ void fitter::fit(int labelE = 10){
     cout << "invalid energy!" << endl;
     return;}
   char title[50];
-  sprintf(title,"root_result/400Bin/%iGeV.root",labelE);
+  sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
   TFile f(title);
 
    // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,800);
@@ -36,11 +39,9 @@ void fitter::fit(int labelE = 10){
    // sat_fit->SetParLimits(1,2000,6000);
 
   //TF1 *sat_fit = new TF1("2nd_try"," [0]*tanh(x*[1])",0,500);
-  //TF1 *sat_fit = new TF1("3rd_try"," [0]*([2]*x/(1+abs(x))+tanh(x*[1]))",0,500);
-  const int MINPOINT = 20;
-  
-  TF1 *sat_fit   = new TF1("4th_try","[0]*x+[1]",50,150);
-  sat_fit->SetParLimits(1,-50,50);
+  //TF1 *sat_fit = new TF1("3rd_try"," [0]*([2]*x/(1+abs(x))+tanh(x*[1]))",0,500);  
+  TF1 *sat_fit   = new TF1("4th_try","[0]*x+[1]",MINPOINT,150);
+  sat_fit->SetParLimits(1,-0.1,0.1);
   double p0_ARR[MAXBD][MAXSKI][MAXCH];
   double p1_ARR[MAXBD][MAXSKI][MAXCH];
   double sat_ARR[MAXBD][MAXSKI][MAXCH];
@@ -53,8 +54,8 @@ void fitter::fit(int labelE = 10){
   int rebinN = 2;
   h1->Rebin(rebinN);
   bool savepng = 0;
-  int stop_and_look = -1;
-  gROOT->SetBatch(kTRUE);
+  int stop_and_look = 0;
+  //gROOT->SetBatch(kTRUE);
 
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     cout << "BD "<< BD << endl;
@@ -69,7 +70,7 @@ void fitter::fit(int labelE = 10){
 	p1_ARR[BD][SKI][CH] = -999;
 	sat_ARR[BD][SKI][CH] = -999;
 	sat_good[BD][SKI][CH] = false;
-	sat_fit->SetRange(MINPOINT,150);
+	sat_fit->SetRange(MINPOINT,MAXPOINT);
         
 	int true_ch = CH*2;
 	sprintf(title,"Board_%i/HGLG_chip%i_ch%i",BD,SKI,true_ch);
@@ -124,7 +125,7 @@ void fitter::fit(int labelE = 10){
 	h1->SetMarkerColor(SKI+1);
 	ratio_plot(tpr,sat_fit,h1);
 	if(stop_and_look == 0)
-	  getchar();
+	  c1->WaitPrimitive();
 	if(savepng)
 	  c1->SaveAs("step1.png");
 	
@@ -147,7 +148,7 @@ void fitter::fit(int labelE = 10){
 	
 	ratio_plot(tpr,sat_fit,h1);
 	if(stop_and_look == 0)
-	  getchar();
+	  //c1->WaitPrimitive();
 	
 	if(savepng)
 	  c1->SaveAs("step2.png");
@@ -166,7 +167,7 @@ void fitter::fit(int labelE = 10){
 	double thres = Calc_avg(h1,lowx,highx);
 	
 	if(stop_and_look == 0)
-	  getchar();
+	  //c1->WaitPrimitive();
 
 	sat_good[BD][SKI][CH] = Find_sat(tpr,h1,&sat_point,&sat_point_x,thres);
 	
@@ -228,7 +229,7 @@ void fitter::fit(int labelE = 10){
 	c1->Update();
 	
 	if(stop_and_look == 0)
-	  getchar();
+	  //c1->WaitPrimitive();
 	if(savepng)
 	  c1->SaveAs("step3.png");
 	
@@ -242,13 +243,13 @@ void fitter::fit(int labelE = 10){
 	c1->Update();
 	
 	if(stop_and_look == 1)
-	  getchar();
+	  //c1->WaitPrimitive();
 	
 	if(savepng)
 	  c1->SaveAs("step4.png");
 	
 	if(savepng)
-	  getchar();
+	  c1->WaitPrimitive();
 	
 	//if( sat_point > 2000 || sat_point < 500) getchar();
 	if( sat_fit->GetParameter(0) < 6 || sat_fit->GetParameter(0) > 10 ||sat_point > 2400 || sat_point < 500 || sat_point_x < 150 || sat_point_x > 300 ){
@@ -695,7 +696,7 @@ void fitter::fit_Draw(){
     if(LG_under_shoot*100./HG_fit.size() > 5) {
       mgr_fit -> Draw("same");
       c1->Update();
-      getchar();}
+      c1->WaitPrimitive();}
       
     if(abs(p1 - new_p1) < 0.01 && loop_time > 1) {
       undershoot_percent = LG_under_shoot*100./HG_fit.size();
@@ -734,7 +735,7 @@ void fitter::fit_spline(int labelE = 10){
     return;}
   //gROOT->SetBatch(kTRUE);
   char title[50];
-  sprintf(title,"root_result/400Bin/%iGeV.root",labelE);
+  sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
   TFile f(title);
 
   double p0_ARR[MAXBD][MAXSKI][MAXCH];
@@ -753,7 +754,7 @@ void fitter::fit_spline(int labelE = 10){
   //int stop_and_look = -1;
   gROOT->SetBatch(kTRUE);
   
-  TF1 *linear = new TF1("","[0]+x*[i]",50,150);
+  TF1 *linear = new TF1("","[0]+x*[i]",MINPOINT,150);
   linear->SetParLimits(0,-50,50);
   TPad pad1_sp("pad1_sp","",0,0,1,1);
   TPad pad2_sp("pad2_sp","",0,0,1,1);
@@ -804,15 +805,15 @@ void fitter::fit_spline(int labelE = 10){
         double h_end   = 800;
 	TH1D *h_derivative = new TH1D("","",(h_end - h_start)/diff,h_start,h_end);
 	
-	double xx = 50;
+	double xx = MINPOINT;
 	for(int i = 0 ; i < h_derivative->GetNbinsX() ; ++i){
 	  double x = h_derivative->GetBinCenter(i);
-	  if(x <= 50 || x >=750) continue;
+	  if(x <= MINPOINT || x >=750) continue;
 	  double y = s->Derivative(xx);
 	  h_derivative->SetBinContent(i,y);
 	  xx += diff;}
 
-	double start_val = s->Derivative(50);
+	double start_val = s->Derivative(MINPOINT);
 	double tmp_sat = -999,tmp_sat_x,thres;
 	thres = start_val - 0.1;
 	bool shift = false;
@@ -896,7 +897,7 @@ void fitter::fit_spline(int labelE = 10){
 	// c1->SaveAs("data_plus_1stderi.png");
 
 	//Fit with pol1 from 50 to sat point
-	linear->SetRange(50,tmp_sat_x);
+	linear->SetRange(MINPOINT,tmp_sat_x);
         tpr->Fit(linear,"EMRQ");
 	
 	p0_ARR[BD][SKI][CH] = linear->GetParameter(0);
@@ -1018,7 +1019,7 @@ TH1D* fitter::TSpline_2nd_deri(TH1D *h_deri, double *sat_x){
   for(int i = 0 ; i < Nbin ; ++i){
     double x = h_deri->GetBinCenter(i);
     double y = h_deri->GetBinContent(i);
-    if( x > 50 && x < 300 ){
+    if( x > MINPOINT && x < 300 ){
       LG.push_back(x);
       HG.push_back(y);}  
 }
@@ -1029,7 +1030,7 @@ TH1D* fitter::TSpline_2nd_deri(TH1D *h_deri, double *sat_x){
   for(int i = 0 ; i < Nbin*10 ; ++i){
     
     double x = h_2ndderi->GetBinCenter(i);
-    if( x > 50 && x < 350 ){
+    if( x > MINPOINT && x < 350 ){
       double y = s->Derivative(x);
       h_2ndderi->SetBinContent(i,y);    }
     else
@@ -1236,7 +1237,7 @@ void fitter::pol4(TProfile *tpr){
   pad1->cd();
   Gline->Draw("same");
   c1->Update();
-  getchar();
+  c1->WaitPrimitive();
 }
 
 double fitter::spline_4nodes(double *x, double *par){

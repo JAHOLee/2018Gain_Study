@@ -121,7 +121,7 @@ void makePlots::Loop(){
   root_logon();
   begin();
   Init();
-  gROOT->SetBatch(kTRUE);
+  //gROOT->SetBatch(kTRUE);
   nevents = T_Rawhit->GetEntries();
   
   c1 = new TCanvas();
@@ -158,8 +158,8 @@ void makePlots::Loop(){
   h_LGundershoot = new TH1D("LG_undershoot","LG_undershoot",40,0,20);
   h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
   
-  //for(int i = 0 ; i < NLAYER; ++i)
-     // Draw_HG_LG(i);
+  for(int i = 0 ; i < NLAYER; ++i)
+    Draw_HG_LG(i);
   Draw_HG_LG();
   h_LGundershoot->Draw();
   c1->Update();
@@ -277,7 +277,8 @@ void makePlots::Draw_HG_LG(int BD = 0){
       if(boardID->at(hit) != BD) continue;
       HG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(HighGainADC->at(hit));
       LG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(LowGainADC->at(hit));
-      TOT_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(TotSlow->at(hit));     }}
+      TOT_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(TotSlow->at(hit));
+    }}
    
   
   TGraph  *gr;
@@ -289,10 +290,11 @@ void makePlots::Draw_HG_LG(int BD = 0){
     leg->SetBorderSize(0);
 
     for(int chip = 0 ; chip < NCHIP ; ++chip){
-      if( Hit_counter[BD][chip][ch] < 1000 ) continue;
+      if( HG_vec[chip][ch].size() < 10 ) continue;
+      
       gr = new TGraph(HG_vec[chip][ch].size(),&LG_vec[chip][ch][0],&HG_vec[chip][ch][0]);
       
-      //gr->Draw("AP");
+      gr->Draw("AP");
       gr->SetMarkerStyle(20);
       gr->SetMarkerSize(0.2);
       gr->SetMarkerColor(chip+1);
@@ -310,7 +312,8 @@ void makePlots::Draw_HG_LG(int BD = 0){
     leg->Draw("same");
     leg->SetHeader(title);
     c1->Update();
-    sprintf(title,"~/HG_LG/plot_out/scatter/BD_%iCH%i.png",BD,ch*2);
+    sprintf(title,"./plot_out/scatter/BD_%iCH%i.png",BD,ch*2);
+    c1->WaitPrimitive();
     
     if(save_png)
       c1->SaveAs(title);
