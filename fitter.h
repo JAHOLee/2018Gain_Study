@@ -20,8 +20,9 @@ class fitter{
  ~fitter();
   
  void fit_Graph();
- void fit(int labelE);
- void fit_spline(int labelE);
+ void fit(int labelE = 100);
+ void fit_spline(int labelE = 100);
+ void look_detail();
  void root_logon();
 
  

@@ -356,7 +356,6 @@ void compare::compare_method(int Ene){
   T_spline->SetBranchAddress("p_saturation",&sat);
   T_spline->SetBranchAddress("good_saturation",&goodsat);
 
-
   for(int i = 0 ;i < T_linear->GetEntries();++i ){
     T_linear->GetEntry(i);
     if(goodsat){
@@ -398,7 +397,7 @@ void compare::compare_method(int Ene){
     h[0][i]->SetLineWidth(2.5);
     h[1][i]->SetLineWidth(2.5);
     
-    h[0][i]->SetMaximum( h[0][i]->GetMaximum()*1.4 );
+    h[0][i]->SetMaximum( h[1][i]->GetMaximum() );
     h[0][i]->Draw();
     h[1][i]->Draw("same");
     leg->Draw("same");

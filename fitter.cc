@@ -25,7 +25,7 @@ fitter::fitter(){
 }
 fitter::~fitter(){
 }
-void fitter::fit(int labelE = 10){
+void fitter::fit(int labelE ){
   if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
        || labelE == 100 || labelE == 150 )) {
     cout << "invalid energy!" << endl;
@@ -41,7 +41,7 @@ void fitter::fit(int labelE = 10){
   //TF1 *sat_fit = new TF1("2nd_try"," [0]*tanh(x*[1])",0,500);
   //TF1 *sat_fit = new TF1("3rd_try"," [0]*([2]*x/(1+abs(x))+tanh(x*[1]))",0,500);  
   TF1 *sat_fit   = new TF1("4th_try","[0]*x+[1]",MINPOINT,150);
-  sat_fit->SetParLimits(1,-0.1,0.1);
+  sat_fit->SetParLimits(1,-50,50);
   double p0_ARR[MAXBD][MAXSKI][MAXCH];
   double p1_ARR[MAXBD][MAXSKI][MAXCH];
   double sat_ARR[MAXBD][MAXSKI][MAXCH];
@@ -125,7 +125,7 @@ void fitter::fit(int labelE = 10){
 	h1->SetMarkerColor(SKI+1);
 	ratio_plot(tpr,sat_fit,h1);
 	if(stop_and_look == 0)
-	  c1->WaitPrimitive();
+	  //c1->WaitPrimitive();
 	if(savepng)
 	  c1->SaveAs("step1.png");
 	
@@ -158,7 +158,7 @@ void fitter::fit(int labelE = 10){
 	Find_high(h1,&highx,&highy);
 	//cout << lowx << " , " << sat_fit->Eval(lowx) << endl;
 	//cout << highx << " , " << sat_fit->Eval(highx) << endl;
-	sat_fit->SetRange(lowx,fit_end);
+	sat_fit->SetRange(MINPOINT,fit_end);
 	tpr->Fit(sat_fit,"QEMR");
 	ratio_plot(tpr,sat_fit,h1);
 	sat_point_x = highx;
@@ -233,7 +233,7 @@ void fitter::fit(int labelE = 10){
 	if(savepng)
 	  c1->SaveAs("step3.png");
 	
-	sat_fit->SetRange(lowx,sat_point_x);
+	sat_fit->SetRange(MINPOINT,sat_point_x);
 	tpr->Fit(sat_fit,"QEMR");
 	ratio_plot(tpr,sat_fit,h1);
 	
@@ -440,7 +440,13 @@ void fitter::fit(int labelE = 10){
   outf.Close();
   
 }
-  
+
+void fitter::look_detail(){
+
+
+}
+
+
 void fitter::Find_low(TH1D* h1,double* lowx,double* lowy){
   double lowerbound = 100;
   int Nbin = h1->GetNbinsX ();
@@ -696,7 +702,8 @@ void fitter::fit_Draw(){
     if(LG_under_shoot*100./HG_fit.size() > 5) {
       mgr_fit -> Draw("same");
       c1->Update();
-      c1->WaitPrimitive();}
+      //c1->WaitPrimitive();
+    }
       
     if(abs(p1 - new_p1) < 0.01 && loop_time > 1) {
       undershoot_percent = LG_under_shoot*100./HG_fit.size();
@@ -728,7 +735,7 @@ void fitter::fit_Draw(){
 
 }
 
-void fitter::fit_spline(int labelE = 10){
+void fitter::fit_spline(int labelE){
   if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
        || labelE == 100 || labelE == 150 )) {
     cout << "invalid energy!" << endl;
@@ -752,7 +759,7 @@ void fitter::fit_spline(int labelE = 10){
   //h1->Rebin(rebinN);
   bool savepng = 0;
   //int stop_and_look = -1;
-  gROOT->SetBatch(kTRUE);
+  //gROOT->SetBatch(kTRUE);
   
   TF1 *linear = new TF1("","[0]+x*[i]",MINPOINT,150);
   linear->SetParLimits(0,-50,50);
@@ -788,7 +795,8 @@ void fitter::fit_spline(int labelE = 10){
 	for(int i = 0 ; i < Nbin ; ++i){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
-	  if( x > 20 && x < 300 && y != 0 && i%10 == 0){
+	  
+	  if( x > 0 && x < 300 && y != 0 && i%2 == 0){
 	    LG.push_back(x);
 	    HG.push_back(y);}
 	  if( x > 300 && y != 0 && i%5 == 0){
@@ -892,7 +900,7 @@ void fitter::fit_spline(int labelE = 10){
 
 	c1->Update();
 	//if(tmp_sat < 1400 )
-	//	c1->WaitPrimitive();
+	//c1->WaitPrimitive();
 	// getchar();
 	// c1->SaveAs("data_plus_1stderi.png");
 
