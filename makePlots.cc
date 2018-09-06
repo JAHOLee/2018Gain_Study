@@ -25,6 +25,44 @@ makePlots::makePlots( TChain *c1 ,string filename):T_Rawhit(c1)
   cout << "Constructor of makePlot ... \n\n" << endl;
   fname = filename;
 }
+makePlots::makePlots( TChain *c1,TChain *c2,string filename ):T_Rechit(c1),T_DWC(c2)
+{
+  cout << "Constructor of makePlot ... \n\n" << endl;
+  fname = filename;
+  // Set object pointer(Data)
+  rechit_detid = 0;
+  rechit_module = 0;
+  rechit_layer = 0;
+  rechit_chip = 0;
+  rechit_channel = 0;
+  rechit_type = 0;
+  rechit_x = 0;
+  rechit_y = 0;
+  rechit_z = 0;
+  rechit_iu = 0;
+  rechit_iv = 0;
+  rechit_energy = 0;
+  rechit_energy_noHG = 0;
+  rechit_amplitudeHigh = 0;
+  rechit_amplitudeLow = 0;
+  rechit_hg_goodFit = 0;
+  rechit_lg_goodFit = 0;
+  rechit_hg_saturated = 0;
+  rechit_lg_saturated = 0;
+  rechit_fully_calibrated = 0;
+  rechit_TS2High = 0;
+  rechit_TS2Low = 0;
+  rechit_TS3High = 0;
+  rechit_TS3Low = 0;
+  rechit_Tot = 0;
+  rechit_time = 0;
+  rechit_timeMaxHG = 0;
+  rechit_timeMaxLG = 0;
+  rechit_toaRise = 0;
+  rechit_toaFall = 0;
+
+  
+}
 
 //Destructor
 makePlots::~makePlots()
@@ -48,52 +86,59 @@ bool makePlots::DBG(){
 }
 
 void makePlots::Init(){
-  
-   skirocID = 0;
-   boardID = 0;
-   moduleID = 0;
-   channelID = 0;
-   HighGainADC = 0;
-   HighGainTmax = 0;
-   HighGainChi2 = 0;
-   HighGainErrorADC = 0;
-   HighGainErrorTmax = 0;
-   HighGainStatus = 0;
-   HighGainNCalls = 0;
-   LowGainADC = 0;
-   LowGainTmax = 0;
-   LowGainChi2 = 0;
-   LowGainErrorADC = 0;
-   LowGainErrorTmax = 0;
-   LowGainStatus = 0;
-   LowGainNCalls = 0;
-   TotSlow = 0;
-   ToaRise = 0;
-   ToaFall = 0;
+
+  nevents = T_Rechit->GetEntries();
+
+  T_Rechit->SetBranchAddress("event", &event);
+  T_Rechit->SetBranchAddress("run", &run);
+  T_Rechit->SetBranchAddress("pdgID", &pdgID);
+  T_Rechit->SetBranchAddress("beamEnergy", &beamEnergy);
+  T_Rechit->SetBranchAddress("trueBeamEnergy", &trueBeamEnergy);
+  T_Rechit->SetBranchAddress("NRechits", &NRechits);
+  T_Rechit->SetBranchAddress("rechit_detid", &rechit_detid);
+  T_Rechit->SetBranchAddress("rechit_module", &rechit_module);
+  T_Rechit->SetBranchAddress("rechit_layer", &rechit_layer);
+  T_Rechit->SetBranchAddress("rechit_chip", &rechit_chip);
+  T_Rechit->SetBranchAddress("rechit_channel", &rechit_channel);
+  T_Rechit->SetBranchAddress("rechit_type", &rechit_type);
+
+  T_Rechit->SetBranchAddress("rechit_x", &rechit_x);
+  T_Rechit->SetBranchAddress("rechit_y", &rechit_y);
+  T_Rechit->SetBranchAddress("rechit_z", &rechit_z);
+  T_Rechit->SetBranchAddress("rechit_iu", &rechit_iu);
+  T_Rechit->SetBranchAddress("rechit_iv", &rechit_iv);
+  T_Rechit->SetBranchAddress("rechit_energy", &rechit_energy);
+  T_Rechit->SetBranchAddress("rechit_energy_noHG", &rechit_energy_noHG);
+
+  T_Rechit->SetBranchAddress("rechit_amplitudeHigh", &rechit_amplitudeHigh);
+  T_Rechit->SetBranchAddress("rechit_amplitudeLow", &rechit_amplitudeLow);
+  T_Rechit->SetBranchAddress("rechit_hg_goodFit", &rechit_hg_goodFit);
+  T_Rechit->SetBranchAddress("rechit_lg_goodFit", &rechit_lg_goodFit);
+  T_Rechit->SetBranchAddress("rechit_hg_saturated", &rechit_hg_saturated);
+  T_Rechit->SetBranchAddress("rechit_lg_saturated", &rechit_lg_saturated);
+  T_Rechit->SetBranchAddress("rechit_fully_calibrated", &rechit_fully_calibrated);
+  T_Rechit->SetBranchAddress("rechit_TS2High", &rechit_TS2High);
+  T_Rechit->SetBranchAddress("rechit_TS2Low", &rechit_TS2Low);
+  T_Rechit->SetBranchAddress("rechit_TS3High", &rechit_TS3High);
+  T_Rechit->SetBranchAddress("rechit_TS3Low", &rechit_TS3Low);
+    
+  T_Rechit->SetBranchAddress("rechit_Tot", &rechit_Tot);
+  T_Rechit->SetBranchAddress("rechit_time", &rechit_time);
+  T_Rechit->SetBranchAddress("rechit_timeMaxHG", &rechit_timeMaxHG);
+  T_Rechit->SetBranchAddress("rechit_timeMaxLG", &rechit_timeMaxLG);
+  T_Rechit->SetBranchAddress("rechit_toaRise", &rechit_toaRise);
+  T_Rechit->SetBranchAddress("rechit_toaFall", &rechit_toaFall);
+
+  T_DWC->SetBranchAddress("ntracks", &ntracks);
+  T_DWC->SetBranchAddress("trackChi2_X", &trackChi2_X);
+  T_DWC->SetBranchAddress("trackChi2_Y", &trackChi2_Y);
+  T_DWC->SetBranchAddress("dwcReferenceType", &dwcReferenceType);
+  T_DWC->SetBranchAddress("m_x", &m_x);
+  T_DWC->SetBranchAddress("m_y", &m_y);
+  T_DWC->SetBranchAddress("b_x", &b_x);
+  T_DWC->SetBranchAddress("b_y", &b_y);
 
   
-   T_Rawhit->SetBranchAddress("eventID", &eventID);
-   T_Rawhit->SetBranchAddress("skirocID", &skirocID);
-   T_Rawhit->SetBranchAddress("boardID", &boardID);
-   T_Rawhit->SetBranchAddress("moduleID", &moduleID);
-   T_Rawhit->SetBranchAddress("channelID", &channelID);
-   T_Rawhit->SetBranchAddress("HighGainADC", &HighGainADC);
-   T_Rawhit->SetBranchAddress("HighGainTmax", &HighGainTmax);
-   T_Rawhit->SetBranchAddress("HighGainChi2", &HighGainChi2);
-   T_Rawhit->SetBranchAddress("HighGainErrorADC", &HighGainErrorADC);
-   T_Rawhit->SetBranchAddress("HighGainErrorTmax", &HighGainErrorTmax);
-   T_Rawhit->SetBranchAddress("HighGainStatus", &HighGainStatus);
-   T_Rawhit->SetBranchAddress("HighGainNCalls", &HighGainNCalls);
-   T_Rawhit->SetBranchAddress("LowGainADC", &LowGainADC);
-   T_Rawhit->SetBranchAddress("LowGainTmax", &LowGainTmax);
-   T_Rawhit->SetBranchAddress("LowGainChi2", &LowGainChi2);
-   T_Rawhit->SetBranchAddress("LowGainErrorADC", &LowGainErrorADC);
-   T_Rawhit->SetBranchAddress("LowGainErrorTmax", &LowGainErrorTmax);
-   T_Rawhit->SetBranchAddress("LowGainStatus", &LowGainStatus);
-   T_Rawhit->SetBranchAddress("LowGainNCalls", &LowGainNCalls);
-   T_Rawhit->SetBranchAddress("TotSlow", &TotSlow);
-   T_Rawhit->SetBranchAddress("ToaRise", &ToaRise);
-   T_Rawhit->SetBranchAddress("ToaFall", &ToaFall);
 }
 void makePlots::Init_BeamE(){
   /*
@@ -117,58 +162,14 @@ void makePlots::Init_BeamE(){
   */
 }
 void makePlots::Loop(){
-  int NLAYER = 28;
   root_logon();
   begin();
   Init();
-  //gROOT->SetBatch(kTRUE);
-  nevents = T_Rawhit->GetEntries();
-  
-  c1 = new TCanvas();
-  
-  
-  for(int l = 0; l < NLAYER ; ++l){
-    for(int chip = 0 ; chip < 4 ; ++chip){
-      for(int Nch = 0 ; Nch < 32 ; ++Nch){
-	Hit_counter[l][chip][Nch] = 0;
-      }
-    }
-  }
-  cout << "Looping over all hits...(for counting)" << endl;
-
-  int count_0 = 0;
-  int count_1 = 0;
-  int m_BDID,m_SKIID,m_CHID;
-  
-  for(int ev = 0; ev < nevents; ++ev){
-    if(ev % 10000 == 0) cout << "processing evt " << ev << endl;
-    T_Rawhit->GetEntry(ev);
-    for(int hit = 0 ; hit < (int)boardID->size() ; ++hit){
-      m_BDID  = boardID->at(hit);
-      m_SKIID = skirocID->at(hit);
-      m_CHID  = channelID->at(hit)/2;
-      if( LowGainADC->at(hit) >= 50 && LowGainADC->at(hit) <= 150)
-	Hit_counter[m_BDID][m_SKIID][m_CHID]++;
-      if(HighGainStatus->at(hit) == 1) count_1++;
-      else count_0++;}
-  }
-  
-  cout << "count 0: " << count_0 << ", count1: " << count_1 << endl;
-  //getchar();
-  h_LGundershoot = new TH1D("LG_undershoot","LG_undershoot",40,0,20);
-  h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
-  
-  for(int i = 0 ; i < NLAYER; ++i)
-    Draw_HG_LG(i);
   Draw_HG_LG();
-  h_LGundershoot->Draw();
-  c1->Update();
-  c1->SaveAs(string(dirpath+string("LG_US.png")).c_str());
   
-  root_out->cd();
-  h_tprLGUS->Write("tprLGUS");
 }
 void makePlots::Draw_HG_LG(){
+  
   int MAXBD   = 28;
   int MAXCHIP = 4;
   int MAXCH   = 32;
@@ -176,7 +177,7 @@ void makePlots::Draw_HG_LG(){
   TProfile *tpr_HGLG[MAXBD][MAXCHIP][MAXCH];
   TProfile *tpr_LGTOT[MAXBD][MAXCHIP][MAXCH];
   int tpr_LS[MAXBD][MAXCHIP][MAXCH];
-  
+  h_tprLGUS = h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
   
   for(int BD = 0; BD < MAXBD ; ++BD){
     for(int chip = 0 ; chip < MAXCHIP ; ++chip){
@@ -188,24 +189,28 @@ void makePlots::Draw_HG_LG(){
 	tpr_LS[BD][chip][ch] = 0;      }}}
   
   for(int ev = 0 ; ev < nevents ; ++ev){
-    T_Rawhit->GetEntry(ev);
-    for(int hit = 0 ; hit < (int) HighGainADC->size() ; ++hit){
+    T_Rechit->GetEntry(ev);
+    //T_DWC   ->GetEntry(ev);
+    
+    for(int hit = 0 ; hit < (int) rechit_amplitudeHigh->size() ; ++hit){
+      
       double HG,LG,TOT;
       int chip,ch,BD;
-      HG   = HighGainADC->at(hit);
-      LG   = LowGainADC->at(hit);
-      TOT  = TotSlow->at(hit);
-      chip = skirocID->at(hit);
-      ch   = channelID->at(hit);
+      HG   = rechit_amplitudeHigh->at(hit);
+      LG   = rechit_amplitudeLow->at(hit);
+      TOT  = rechit_Tot->at(hit);
+      chip = (int)rechit_chip->at(hit);
+      ch   = (int)rechit_channel->at(hit);
       ch   /= 2;
-      BD   = boardID->at(hit);
+      BD   = rechit_layer->at(hit);
+      BD   -= 1;
       if( HG > 200 && LG < 20) tpr_LS[BD][chip][ch]++;
       if( LG < 5 ) continue;
       tpr_HGLG[BD][chip][ch]->Fill(LG,HG,1);
       tpr_LGTOT[BD][chip][ch]->Fill(TOT,LG,1);
+      
     }
   }
-
 
   TDirectory *dir;
   for(int BD = 0; BD < MAXBD ; ++BD){
@@ -215,6 +220,8 @@ void makePlots::Draw_HG_LG(){
     dir->cd();
     for(int chip = 0 ; chip < MAXCHIP ; ++chip){
       for(int ch = 0 ; ch < MAXCH ;++ch){
+	if(tpr_HGLG[BD][chip][ch]->GetEntries() == 0){
+	  continue;}	
 	sprintf(title,"HGLG_chip%i_ch%i",chip,ch*2);
 	tpr_HGLG[BD][chip][ch]->SetTitle(title);
 	tpr_HGLG[BD][chip][ch]->SetName(title);
@@ -222,6 +229,9 @@ void makePlots::Draw_HG_LG(){
 	tpr_HGLG[BD][chip][ch]->SetMarkerSize(1.2);
 	tpr_HGLG[BD][chip][ch]->SetMarkerColor(chip+1);
 	tpr_HGLG[BD][chip][ch]->Write(title);
+
+	if(tpr_LGTOT[BD][chip][ch]->GetEntries() == 0){
+	  continue;}
 	sprintf(title,"LGTOT_chip%i_ch%i",chip,ch*2);
 	tpr_LGTOT[BD][chip][ch]->SetTitle(title);
 	tpr_LGTOT[BD][chip][ch]->SetName(title);
@@ -229,98 +239,27 @@ void makePlots::Draw_HG_LG(){
 	tpr_LGTOT[BD][chip][ch]->SetMarkerSize(1.2);
 	tpr_LGTOT[BD][chip][ch]->SetMarkerColor(chip+1);
 	tpr_LGTOT[BD][chip][ch]->Write(title);
-  
+
+	
 	if(tpr_LS[BD][chip][ch] != 0){
 	  double US_LG_percernt = tpr_LS[BD][chip][ch]*100./tpr_HGLG[BD][chip][ch]->GetEntries();
 	  h_tprLGUS->Fill(US_LG_percernt);
 	  ofstream of(string(dirpath+string("LG_US.txt")).c_str(), std::ios::app);
 	  of << BD << "\t" << chip << "\t" << ch*2 << "\t" << US_LG_percernt
 	     << endl;
-	  of.close();}	
+	     of.close();}	
       }
-    }
+    }	
   }
-
+  
+  
   for(int BD = 0; BD < MAXBD ; ++BD){
     for(int chip = 0 ; chip < MAXCHIP ; ++chip){
       for(int ch = 0 ; ch < MAXCH ;++ch){
 	delete tpr_HGLG[BD][chip][ch];
 	delete tpr_LGTOT[BD][chip][ch];}}}
   
-}
-
-void makePlots::Draw_HG_LG(int BD = 0){
-  bool save_png = true;
-
-  int NCHIP = 4;
-  int NCH   = 32;
-  char title[50];
-  char title_sub[20];
-
-  cout << "staring Board " << BD << endl;
-
-  
-  vector< vector< vector< double > > > HG_vec,LG_vec,TOT_vec;
-  for(int chip = 0 ; chip < NCHIP ; ++chip){
-    HG_vec.resize(NCHIP);
-    LG_vec.resize(NCHIP);
-    TOT_vec.resize(NCHIP);
-    for(int ch = 0; ch < NCH ; ++ch){
-      HG_vec[chip].resize(NCH);
-      LG_vec[chip].resize(NCH);
-      TOT_vec[chip].resize(NCH);     }   }
-   
-  for(int ev = 0; ev < nevents; ++ev){
-    if(ev % 10000 == 0) cout << "processing evt " << ev << endl;
-    T_Rawhit->GetEntry(ev);
-    for(int hit = 0 ;hit < (int)channelID->size(); ++hit ){
-      if(boardID->at(hit) != BD) continue;
-      HG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(HighGainADC->at(hit));
-      LG_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(LowGainADC->at(hit));
-      TOT_vec[skirocID->at(hit)][channelID->at(hit)/2].push_back(TotSlow->at(hit));
-    }}
-   
-  
-  TGraph  *gr;
-  TMultiGraph  *mgr;
-  TLegend *leg;
-  for(int ch = 0; ch < NCH ; ++ch){
-    mgr = new TMultiGraph();
-    leg = new TLegend(0.65,0.13,0.9,0.4);
-    leg->SetBorderSize(0);
-
-    for(int chip = 0 ; chip < NCHIP ; ++chip){
-      if( HG_vec[chip][ch].size() < 10 ) continue;
-      
-      gr = new TGraph(HG_vec[chip][ch].size(),&LG_vec[chip][ch][0],&HG_vec[chip][ch][0]);
-      
-      gr->Draw("AP");
-      gr->SetMarkerStyle(20);
-      gr->SetMarkerSize(0.2);
-      gr->SetMarkerColor(chip+1);
-      
-      sprintf(title_sub,"chip%i",chip);
-      leg->AddEntry(gr,title_sub,"P");
-      mgr->Add(gr);
-    }
-     
-    mgr->Draw("AP");
-    mgr->SetTitle(";LG(ADC);HG(ADC)");
-    
-    
-    sprintf(title,"Board_%iCH%i",BD,ch*2);
-    leg->Draw("same");
-    leg->SetHeader(title);
-    c1->Update();
-    sprintf(title,"./plot_out/scatter/BD_%iCH%i.png",BD,ch*2);
-    c1->WaitPrimitive();
-    
-    if(save_png)
-      c1->SaveAs(title);
-  }
-
-}
- 
+} 
 
 void makePlots::InitTH2Poly(TH2Poly& poly)
 {

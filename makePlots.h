@@ -20,6 +20,8 @@ using namespace std;
 class makePlots{
  public:
   makePlots( TChain *c1 , string filename);
+  makePlots( TChain *c1,TChain *c2,string filename );
+
   ~makePlots();
   
   bool DBG();
@@ -36,7 +38,11 @@ class makePlots{
  private:
   //TApplication *app;
   
+  TFile        *Inputfile;
   TTree        *T_Rawhit;
+  TTree        *T_Rechit;
+  TTree        *T_DWC;
+
   TH1D         *h_tprLGUS;
   TH1D         *h_LGundershoot;
   TFile        *root_out;
@@ -57,28 +63,56 @@ class makePlots{
   // Declaration of leaf types //
   ///////////////////////////////
 
-   Int_t           eventID;
-   vector<int>     *skirocID;
-   vector<int>     *boardID;
-   vector<int>     *moduleID;
-   vector<int>     *channelID;
-   vector<float>   *HighGainADC;
-   vector<float>   *HighGainTmax;
-   vector<float>   *HighGainChi2;
-   vector<float>   *HighGainErrorADC;
-   vector<float>   *HighGainErrorTmax;
-   vector<int>     *HighGainStatus;
-   vector<int>     *HighGainNCalls;
-   vector<float>   *LowGainADC;
-   vector<float>   *LowGainTmax;
-   vector<float>   *LowGainChi2;
-   vector<float>   *LowGainErrorADC;
-   vector<float>   *LowGainErrorTmax;
-   vector<int>     *LowGainStatus;
-   vector<int>     *LowGainNCalls;
-   vector<int>     *TotSlow;
-   vector<int>     *ToaRise;
-   vector<int>     *ToaFall;
+    /*Data*/
+  //For Rechit
+   UInt_t          event;
+   UInt_t          run;
+   Int_t           pdgID;
+   Float_t         beamEnergy;
+   Float_t         trueBeamEnergy;
+   Int_t           NRechits;
+   vector<unsigned int> *rechit_detid;
+   vector<unsigned int> *rechit_module;
+   vector<unsigned int> *rechit_layer;
+   vector<unsigned int> *rechit_chip;
+   vector<unsigned int> *rechit_channel;
+   vector<unsigned int> *rechit_type;
+   vector<float>   *rechit_x;
+   vector<float>   *rechit_y;
+   vector<float>   *rechit_z;
+   vector<int>     *rechit_iu;
+   vector<int>     *rechit_iv;
+   vector<float>   *rechit_energy;
+   vector<float>   *rechit_energy_noHG;
+   vector<float>   *rechit_amplitudeHigh;
+   vector<float>   *rechit_amplitudeLow;
+   vector<bool>     *rechit_hg_goodFit;
+   vector<bool>     *rechit_lg_goodFit;
+   vector<bool>     *rechit_hg_saturated;
+   vector<bool>     *rechit_lg_saturated;
+   vector<bool>     *rechit_fully_calibrated;
+   vector<float>   *rechit_TS2High;
+   vector<float>   *rechit_TS2Low;
+   vector<float>   *rechit_TS3High;
+   vector<float>   *rechit_TS3Low;
+   vector<unsigned short>   *rechit_Tot;
+   vector<float>   *rechit_time;   
+   vector<float>   *rechit_timeMaxHG;
+   vector<float>   *rechit_timeMaxLG;
+   vector<unsigned short>   *rechit_toaRise;
+   vector<unsigned short>   *rechit_toaFall;
+
+   // For ImpactPoints (from Delayed wire chamber)
+   Int_t           ntracks;
+   // ignore the layers currently
+   Float_t         trackChi2_X;
+   Float_t         trackChi2_Y;
+   Int_t           dwcReferenceType;
+   Double_t        m_x;
+   Double_t        m_y;
+   Double_t        b_x;
+   Double_t        b_y;
+
    
 };
 
