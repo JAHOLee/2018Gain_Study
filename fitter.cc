@@ -24,6 +24,8 @@ fitter::fitter(){
   c1 = new TCanvas();
 }
 fitter::~fitter(){
+  delete c1;
+  c1 = NULL;
 }
 void fitter::fit(int labelE ){
   if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
@@ -46,7 +48,7 @@ void fitter::fit(int labelE ){
   double p1_ARR[MAXBD][MAXSKI][MAXCH];
   double sat_ARR[MAXBD][MAXSKI][MAXCH];
   bool   sat_good[MAXBD][MAXSKI][MAXCH];
-
+  root_logon();
   gStyle->SetOptStat(0);
   TProfile *tpr = (TProfile *)f.Get("Board_7/HGLG_chip2_ch44");
   //  TProfile *tpr = new TProfile("","",200,0,800,0,4000);
@@ -54,9 +56,10 @@ void fitter::fit(int labelE ){
   int rebinN = 2;
   h1->Rebin(rebinN);
   bool savepng = 0;
-  int stop_and_look = 0;
+  int stop_and_look = -1;
   //gROOT->SetBatch(kTRUE);
 
+  
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     cout << "BD "<< BD << endl;
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
@@ -77,20 +80,22 @@ void fitter::fit(int labelE ){
 	tpr = (TProfile *)f.Get(title);
 	if(tpr == NULL) continue;
 	if(tpr->GetEntries() < 1500) continue;
-	if(BD == 9 && SKI == 3 && CH*2 == 36 ) continue;
-	if(BD == 18 && SKI == 2 && CH*2 == 12) continue;
-	if(BD == 19 && SKI == 0 && CH*2 == 46) continue;
 
 	tpr->Rebin(rebinN);
 	
 	int nentry = tpr->GetEntries();
 	if( nentry < 1000 ) continue;
+	
+	sprintf(title,"Board%i_HGLG_chip%i_ch%i",BD,SKI,true_ch);
 	tpr->SetName(title);
+	tpr->SetTitle(title);
+	
 	//tpr->Draw();
 	//c1->Update();
 	//getchar();
  
-	tpr->Fit(sat_fit,"QEMR");
+	tpr->Fit(sat_fit,"QEMR0");
+	tpr->Draw();
 	//tpr->Fit(sat_fit2,"QEMR");
 	sat_fit->Draw("same");
 	sat_fit->SetLineColor(6);
@@ -130,7 +135,7 @@ void fitter::fit(int labelE ){
 	  c1->SaveAs("step1.png");
 	
 	sat_fit->SetRange(fit_start,fit_end);
-        tpr->Fit(sat_fit,"QEMR");
+        tpr->Fit(sat_fit,"QEMR0");
 	sat_fit->Draw("same");
 	h1->Reset();
 	double sat_point = 0;
@@ -159,7 +164,7 @@ void fitter::fit(int labelE ){
 	//cout << lowx << " , " << sat_fit->Eval(lowx) << endl;
 	//cout << highx << " , " << sat_fit->Eval(highx) << endl;
 	sat_fit->SetRange(MINPOINT,fit_end);
-	tpr->Fit(sat_fit,"QEMR");
+	tpr->Fit(sat_fit,"QEMR0");
 	ratio_plot(tpr,sat_fit,h1);
 	sat_point_x = highx;
 	sat_point   = sat_fit->Eval(highx);
@@ -182,69 +187,42 @@ void fitter::fit(int labelE ){
 	  h1->SetBinContent(i,res);
 	  h1->SetBinError(i,error);	 
 	}
-
-	//sat_good[BD][SKI][CH] = Find_sat(tpr,h1,&sat_point,&sat_point_x);
-	/*
-	if( sat_fit->Eval(highx) < sat_point || sat_point < 500 ){	  
-	  sat_point_x = highx;
-	  sat_point   = sat_fit->Eval(highx);	}
-	*/
-
-	//ratio_plot(tpr,sat_fit,h1);
-	//cout << "coooooooooooool" << endl;
-	//getchar();
-	
-	// TF1 *sat_fit2   = new TF1("4th_try2","[0]*x",0,fit_end);
-	// tpr->Fit(sat_fit2);
-
-	// for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
-	//   double x = tpr->GetBinCenter(i);
-	//   double y = tpr->GetBinContent(i);
-	//   if(x == 0 || y == 0) continue;
-	//   //cout << "x = "<< x << ", y = " << y << endl;
-	//   double res = ( y - x*p0[BD][SKI][CH]) / (x*p0[BD][SKI][CH]);
-	//   double error = tpr->GetBinError(i)/(x*p0[BD][SKI][CH]);
-	//   h1->SetBinContent(i,res);
-	//   h1->SetBinError(i,error);
-	// }
-		
-	
-
-	//h1->Draw("e");
-	//sat_fit_2->Draw("same");
-	//sat_fit_2->SetLineColor(7);
-	//tpr->Draw();
-	// sat_fit2->SetLineColor(7);
-	// sat_fit2->SetMarkerStyle(20);
-	// sat_fit2->SetMarkerSize(1.2);
-	// sat_fit2->Draw("same");
+			
 	ratio_plot(tpr,sat_fit,h1);
 	TLine *Gline = new TLine(0,sat_point,tpr->GetXaxis()->GetXmax(),sat_point);
 	Gline->SetLineColor(1);
 	Gline->SetLineWidth(4.8);
-	//Gline->SetLineStyle(7);
+	Gline->SetLineStyle(7);
 	pad1->cd();
-	Gline->Draw("same");  
-	c1->cd();
-	c1->Update();
+	Gline->Draw("same");
 	
-	if(stop_and_look == 0)
-	  //c1->WaitPrimitive();
+	if(stop_and_look == 0){
+	  c1->cd();
+	  c1->Update();
+	  c1->WaitPrimitive();}
+	
 	if(savepng)
 	  c1->SaveAs("step3.png");
 	
 	sat_fit->SetRange(MINPOINT,sat_point_x);
-	tpr->Fit(sat_fit,"QEMR");
+	tpr->Fit(sat_fit,"QEMR0");
 	ratio_plot(tpr,sat_fit,h1);
+
+	if(stop_and_look == 0){
+	  pad1->cd();}
 	
 	pad1->cd();
-	Gline->Draw("same");  
+	Gline->Draw("same");
+	
 	c1->cd();
 	c1->Update();
-	
-	if(stop_and_look == 1)
-	  //c1->WaitPrimitive();
-	
+	//c1->WaitPrimitive();
+
+	if(stop_and_look == 0){
+	  c1->cd();
+	  c1->Update();
+	  c1->WaitPrimitive();}
+
 	if(savepng)
 	  c1->SaveAs("step4.png");
 	
@@ -312,40 +290,6 @@ void fitter::fit(int labelE ){
       leg->AddEntry(gr,title,"P");
       
     }
-    /*
-    mgr[0]->Draw("AP");
-    mgr[0]->GetXaxis()->SetTitle("CH");
-    mgr[0]->GetYaxis()->SetTitle("p1");
-    mgr[0]->SetMaximum(13);
-    leg->Draw("same");
-    
-    c1->Update();
-    sprintf(title,"plot_out/%iGeV/BD%i_p1.png",labelE,BD);
-    c1->SaveAs(title);
-
-    mgr[2]->Draw("AP");
-    mgr[2]->GetXaxis()->SetTitle("CH");
-    mgr[2]->GetYaxis()->SetTitle("p0");
-    mgr[2]->SetMaximum(40);
-    mgr[2]->SetMinimum(-40);
-    leg->Draw("same");
-    
-    c1->Update();
-    sprintf(title,"plot_out/%iGeV/BD%i_p0.png",labelE,BD);
-    c1->SaveAs(title);
-
-    
-    mgr[1]->Draw("AP");
-    mgr[1]->GetXaxis()->SetTitle("CH");
-    mgr[1]->GetXaxis()->SetTitle("sat_point");
-    mgr[1]->SetMaximum(3000);
-      
-    leg->Draw("same");
-    c1->Update();
-    sprintf(title,"plot_out/%iGeV/BD%i_sat.png",labelE,BD);
-    c1->SaveAs(title);
-    */    
-    //getchar();
   }
 
 
@@ -740,7 +684,7 @@ void fitter::fit_spline(int labelE){
        || labelE == 100 || labelE == 150 )) {
     cout << "invalid energy!" << endl;
     return;}
-  //gROOT->SetBatch(kTRUE);
+  
   char title[50];
   sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
   TFile f(title);
@@ -759,7 +703,7 @@ void fitter::fit_spline(int labelE){
   //h1->Rebin(rebinN);
   bool savepng = 0;
   //int stop_and_look = -1;
-  //gROOT->SetBatch(kTRUE);
+  gROOT->SetBatch(kTRUE);
   
   TF1 *linear = new TF1("","[0]+x*[i]",MINPOINT,150);
   linear->SetParLimits(0,-50,50);
@@ -782,11 +726,11 @@ void fitter::fit_spline(int labelE){
 	if(tpr == NULL) continue;
 	tpr_entry[BD][SKI][CH] = tpr->GetEntries();
 	if(tpr->GetEntries() < 1500) continue;
-	if(BD == 9 && SKI == 3 && CH*2 == 36 ) continue;
-	if(BD == 18 && SKI == 2 && CH*2 == 12) continue;
-	if(BD == 19 && SKI == 0 && CH*2 == 46) continue;
+
+	sprintf(title,"Board%i_HGLG_chip%i_ch%i",BD,SKI,true_ch);
 	tpr->Rebin(rebinN);
 	tpr->SetName(title);
+	tpr->SetTitle(title);
 
 	int Nbin = tpr->GetNbinsX();
 	vector<double> HG,LG;
@@ -796,17 +740,18 @@ void fitter::fit_spline(int labelE){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
 	  
-	  if( x > 0 && x < 300 && y != 0 && i%2 == 0){
+	  if( x > 0 && x < 300 && y != 0 && i%10 == 0){
 	    LG.push_back(x);
 	    HG.push_back(y);}
 	  if( x > 300 && y != 0 && i%5 == 0){
 	    LG.push_back(x);
 	    HG.push_back(y);}
 	}
+
 	
 	int np = LG.size();
+	if(np == 0) continue;
 	TSpline3 *s = new TSpline3("grs",&LG[0],&HG[0],np);
-
 	
 	double diff = 0.1;
 	double h_start = 0;
@@ -816,10 +761,12 @@ void fitter::fit_spline(int labelE){
 	double xx = MINPOINT;
 	for(int i = 0 ; i < h_derivative->GetNbinsX() ; ++i){
 	  double x = h_derivative->GetBinCenter(i);
-	  if(x <= MINPOINT || x >=750) continue;
+	  if(x <= MINPOINT || x >=350) continue;
 	  double y = s->Derivative(xx);
 	  h_derivative->SetBinContent(i,y);
 	  xx += diff;}
+
+
 
 	double start_val = s->Derivative(MINPOINT);
 	double tmp_sat = -999,tmp_sat_x,thres;
@@ -841,7 +788,6 @@ void fitter::fit_spline(int labelE){
 	      tmp_sat_x = x;
 	      break;	    }
 	  }}
-
 	//*************************************************************
 	//overwrite the sat_x and threshold calculate by 1st derivative
 	//*************************************************************
@@ -866,7 +812,29 @@ void fitter::fit_spline(int labelE){
 	tpr->SetMaximum(pad1max);
 	s->Draw("same");
 
+	//Start to Draw	
+	TLine *Gline2 = new TLine(tmp_sat_x,0,tmp_sat_x,pad1max);
+	Gline2->SetLineColor(1);
+	Gline2->SetLineWidth(4.8);
+	Gline2->SetLineStyle(7);
+	Gline2->Draw("same");
+
+	TLine *Gline3 = new TLine(0,tmp_sat,pad1xmax,tmp_sat);
+	Gline3->SetLineColor(2);
+	Gline3->SetLineWidth(4.8);
+	Gline3->SetLineStyle(7);
+	Gline3->Draw("same");
 	
+	//if(tmp_sat < 1400 )
+	// getchar();
+	// c1->SaveAs("data_plus_1stderi.png");
+
+	//Fit with pol1 from 50 to sat point
+	linear->SetRange(MINPOINT,tmp_sat_x);
+	linear->SetLineColor(7);
+        tpr->Fit(linear,"EMRQ");
+
+
 	pad2_sp.Draw();
 	pad2_sp.cd();
 	
@@ -874,39 +842,12 @@ void fitter::fit_spline(int labelE){
 	h_derivative->SetMinimum(0);
 	h_derivative->SetLineColor(SKI+3);
 	h_derivative->SetLineWidth(1.5);
-	h_derivative->Draw("Y+");
       	h_derivative->GetXaxis()->SetNdivisions(0);
 	h_derivative->GetYaxis()->SetTitle("1st_deri");
 	h_derivative->GetYaxis()->SetTitleOffset(0.8);
 	h_derivative->Draw("Y+");
 
-	
-	//Start to Draw
-	pad1_sp.cd();
-	//pad1_sp.Draw();
-	TLine *Gline2 = new TLine(tmp_sat_x,0,tmp_sat_x,pad1max);
-	Gline2->SetLineColor(1);
-	Gline2->SetLineWidth(4.8);
-	Gline2->SetLineStyle(7);
-	Gline2->Draw();
-
-	TLine *Gline3 = new TLine(0,tmp_sat,pad1xmax,tmp_sat);
-	Gline3->SetLineColor(2);
-	Gline3->SetLineWidth(4.8);
-	Gline3->SetLineStyle(7);
-	Gline3->Draw();
-	
-	pad1_sp.Draw();
-
-	c1->Update();
-	//if(tmp_sat < 1400 )
-	//c1->WaitPrimitive();
-	// getchar();
-	// c1->SaveAs("data_plus_1stderi.png");
-
-	//Fit with pol1 from 50 to sat point
-	linear->SetRange(MINPOINT,tmp_sat_x);
-        tpr->Fit(linear,"EMRQ");
+	c1->cd();
 	
 	p0_ARR[BD][SKI][CH] = linear->GetParameter(0);
 	p1_ARR[BD][SKI][CH] = linear->GetParameter(1);
@@ -918,8 +859,10 @@ void fitter::fit_spline(int labelE){
 	if( p1_ARR[BD][SKI][CH] < 6 || p1_ARR[BD][SKI][CH] > 10 )
 	  sat_good[BD][SKI][CH] = false;
 
+	c1->Update();
+	//c1->WaitPrimitive();
 	
-
+	
 	delete s;delete h_derivative;
         delete Gline2;delete Gline3;
 	delete derivative_2nd;
@@ -1179,7 +1122,6 @@ void fitter::pol4(TProfile *tpr){
   int N_of_par  = 4;
   sprintf(title,"pol%i",N_of_par);
   TF1    *mytry = new TF1("",title,50,600);
-  double pars[N_of_par];
   double pars_der[N_of_par-1];
   double pars_2der[N_of_par-2];
 	
@@ -1188,7 +1130,6 @@ void fitter::pol4(TProfile *tpr){
   tpr->SetMaximum(4000);
   tpr->Fit(mytry,"EMR0");
   for(int i = 0 ; i < N_of_par; ++i){
-    pars[i] = mytry->GetParameter(i);
     if( i == 0) continue;
     pars_der[i-1] = mytry->GetParameter(i)*(i);
     if( i <= 1) continue;
@@ -1342,8 +1283,10 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   Gline->SetLineColor(1);
   Gline->SetLineWidth(4.8);
   Gline->SetLineStyle(7);
-  Gline->Draw();  
+  Gline->Draw();
+  c1->cd();
   c1->Update();
+  
   //getchar();
 }
 

@@ -1,13 +1,14 @@
 #include "makePlots.h"
 #include "fitter.h"
 #include "compare.h"
+#include "single_module.h"
 #include <fstream>
 #include <iostream>
 
 int main(){
   TApplication *app = new TApplication("app",0,0);
-  fitter fit;
-  fit.fit(100);
+  //fitter fit;
+  //fit.fit(100);
   //fit.fit_spline(100);
   // int Ene_arr[6] = {10,30,50,80,100,150};
   // for(int i = 0 ;i < (int)sizeof(Ene_arr)/sizeof(int) ; ++i){
@@ -18,7 +19,7 @@ int main(){
   //compare com;
   // com.compare_Ene();
   //com.compare_method();
-  return 0;
+  //return 0;
 
   TChain *chain = new TChain("pulseshapeplotter/tree");
   
@@ -40,8 +41,10 @@ int main(){
   }
   infile.close();
 
-  makePlots M(chain,filename);
-  M.dirpath = dirpath;
-  M.Loop();
+  // makePlots M(chain,filename);
+  // M.dirpath = dirpath;
+  // M.Loop();
+  single_module S(chain,filename);
+  S.Loop();
   return(0);
 }

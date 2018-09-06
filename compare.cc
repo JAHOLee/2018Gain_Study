@@ -356,6 +356,7 @@ void compare::compare_method(int Ene){
   T_spline->SetBranchAddress("p_saturation",&sat);
   T_spline->SetBranchAddress("good_saturation",&goodsat);
 
+
   for(int i = 0 ;i < T_linear->GetEntries();++i ){
     T_linear->GetEntry(i);
     if(goodsat){
@@ -397,7 +398,7 @@ void compare::compare_method(int Ene){
     h[0][i]->SetLineWidth(2.5);
     h[1][i]->SetLineWidth(2.5);
     
-    h[0][i]->SetMaximum( h[1][i]->GetMaximum() );
+    h[0][i]->SetMaximum( h[0][i]->GetMaximum()*1.2 );
     h[0][i]->Draw();
     h[1][i]->Draw("same");
     leg->Draw("same");
@@ -407,6 +408,70 @@ void compare::compare_method(int Ene){
     if(i == 2) c1->SaveAs("compare_sat.png");
 
     //c1->WaitPrimitive();
+  }
+
+
+  
+  // Correlation
+
+  vector<double> linear_p0,linear_p1,linear_sat;
+  vector<double> spline_p0,spline_p1,spline_sat;
+
+  for(int i = 0 ;i < T_linear->GetEntries();++i ){
+    T_linear->GetEntry(i);
+    if(goodsat){
+      h[0][0]->Fill(p0);
+      h[0][1]->Fill(p1);
+      h[0][2]->Fill(sat);
+      linear_p0.push_back(p0);
+      linear_p1.push_back(p1);
+      linear_sat.push_back(sat);
+      
+      T_spline->GetEntry(i);
+      if(goodsat){
+	spline_p0.push_back(p0);
+	spline_p1.push_back(p1);
+	spline_sat.push_back(sat);
+      }
+      else{
+	linear_p0.pop_back();
+	linear_p1.pop_back();
+	linear_sat.pop_back();	
+      }
+    }
+  }
+
+  TGraph *gr[3];
+  for(int i = 0 ; i < 3 ; ++i){
+    if( i == 0 ){
+      gr[i] = new TGraph(linear_p0.size(),&linear_p0[0],&spline_p0[0]);
+      gr[i]->GetXaxis()->SetTitle("linear_p0");
+      gr[i]->GetYaxis()->SetTitle("spline_p0");}
+    if( i == 1 ){
+      gr[i] = new TGraph(linear_p0.size(),&linear_p1[0],&spline_p1[0]);
+      gr[i]->GetXaxis()->SetTitle("linear_p1");
+      gr[i]->GetYaxis()->SetTitle("spline_p1");}
+    if( i == 2 ){
+      gr[i] = new TGraph(linear_p0.size(),&linear_sat[0],&spline_sat[0]);
+      gr[i]->GetXaxis()->SetTitle("linear_sat");
+      gr[i]->GetYaxis()->SetTitle("spline_sat");}
+    gr[i]->SetMarkerSize(1.2);
+    gr[i]->SetMarkerStyle(20);
+    gr[i]->SetMarkerColor(2);
+    gr[i]->Draw("AP");
+    gr[i]->SetTitle("");
+    c1->Update();
+    
+
+    if(i == 0){
+      c1->SaveAs("correlation_p0.png");}
+    if(i == 1){
+      c1->SaveAs("correlation_p1.png");}
+    if(i == 2){
+      gr[i]->GetYaxis()->SetTitleOffset(1.2);
+      c1->SaveAs("correlation_sat.png");}
+
+
   }
   
   

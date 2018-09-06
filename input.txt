@@ -1,1 +1,1 @@
-root_data/HexaOutput_245_noCalib.root
+root_data/module59/ana_output/Module59_20-7-2018_17-11_pedestal.root

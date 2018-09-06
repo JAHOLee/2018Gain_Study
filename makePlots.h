@@ -57,7 +57,6 @@ class makePlots{
   // Declaration of leaf types //
   ///////////////////////////////
 
-   // Declaration of leaf types
    Int_t           eventID;
    vector<int>     *skirocID;
    vector<int>     *boardID;
