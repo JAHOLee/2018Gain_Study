@@ -21,31 +21,62 @@ int main(){
   //com.compare_method();
   //return 0;
 
-  TChain *chain = new TChain("rechitntupler/hits");
+  bool single = false;
+  
+  TChain *chain  = new TChain("rechitntupler/hits");
   TChain *chain2 = new TChain("trackimpactntupler/impactPoints");
 
+  //TChain *chain_single = new TChain("treeproducer/sk2cms");
+
+  int TB_member     = 0;
+  int single_member = 0;
+  
   string filename;
   //string dirpath = "/afs/cern.ch/user/c/chchien/HG_LG/";
   string dirpath = "./";
 
   ifstream infile("input.txt");
+  
   while(true){
     
     infile >> filename;
     if(infile.eof()) break;
     if( filename.length() > 2){
       cout << "input file: " << filename << endl;
-      chain ->Add(filename.c_str());
-      chain2->Add(filename.c_str());    
+
+      TFile f( filename.c_str() );
+      //check if directories exist...
+      bool single_tree,pulseshape_tree,TB_ntuple;
+      single_tree = f.GetListOfKeys()->Contains("treeproducer");
+      pulseshape_tree = f.GetListOfKeys()->Contains("pulseshapeplotter");
+      TB_ntuple   = f.GetListOfKeys()->Contains("rechitntupler");
+
+      if(single_tree && pulseshape_tree){
+	single_member++;
+	TChain *chain_single  = new TChain("pulseshapeplotter/tree");
+        chain_single->Add(filename.c_str());
+	single_module S(chain_single,filename);
+	S.Loop();
+	delete chain_single;
+      }
+      else if(TB_ntuple){
+	TB_member++;
+	chain ->Add(filename.c_str());
+	chain2->Add(filename.c_str());}
+      else{
+	cout << filename.c_str() << " contains unknown tree to me ..." << endl;
+      }
+      f.Close();
     }
     else{
       cout << "file " << filename << " is not available, please check input.txt" << endl;}
   }
   infile.close();
-
-  makePlots M(chain,chain2,filename);
-  M.dirpath = dirpath;
-  M.Loop();
+  
+  if(TB_member != 0){
+    makePlots M(chain,chain2,filename);
+    M.dirpath = dirpath;
+    M.Loop();}
   //single_module S(chain,filename);
   //S.Loop();
   return(0);
