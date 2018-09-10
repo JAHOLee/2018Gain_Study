@@ -29,11 +29,14 @@ fitter::~fitter(){
 }
 void fitter::fit(int labelE ){
   if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
-       || labelE == 100 || labelE == 150 )) {
+       || labelE == 100 || labelE == 150 || labelE == -1)) {
     cout << "invalid energy!" << endl;
     return;}
   char title[50];
-  sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
+  if(labelE == -1)
+    sprintf(title,"root_result/400Bin/update/inj.root",labelE);
+  else
+    sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
   TFile f(title);
 
    // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,800);
