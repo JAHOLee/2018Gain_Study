@@ -16,7 +16,8 @@ class compare : public fitter{
   ~compare();
   void compare_Ene(int method = 1);
   void compare_method(int Ene = 100);
-
+  void compare_Data_Inj();
+  
  private:
   
   void store_GR(string fname,int label);

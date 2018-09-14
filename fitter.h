@@ -4,6 +4,7 @@
 #include "TGraph.h"
 #include "TCanvas.h"
 #include "TProfile.h"
+#include "TSpline.h"
 #include "TH1.h"
 #include "TF1.h"
 #include <vector>
@@ -23,6 +24,7 @@ class fitter{
  void fit(int labelE = 100);
  void fit_spline(int labelE = 100);
  void look_detail();
+ void fit_LGTOT(int labelE = 100);
  void root_logon();
 
  
@@ -38,10 +40,13 @@ class fitter{
  TGraph *gr;
  TCanvas *c1;
  void fit_Draw();
- void ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio);
+ void ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title = "LG",string Y_title = "HG");
+ void Draw_Spline_and_1stderi(TProfile& tpr, TSpline3 &s, TH1D& h_deri);
+
  
  void Find_low(TH1D* h1,double* lowx,double* lowy);
- void Find_high(TH1D* h1,double* highx,double* highy);
+ void Find_high(TH1D* h1,double* highx,double* highy, double lowerbound = 200,
+ double upperbound = 300);
  bool Find_sat(TProfile *tpr, TH1D* h1, double *sat,double *sat_x,double thres);
  double Calc_avg(TH1D* h1 , double min,double max);
  TH1D* qualify(double ARR[MAXBD][MAXSKI][MAXCH],int option);

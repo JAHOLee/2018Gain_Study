@@ -7,10 +7,9 @@
 #include "TStyle.h"
 #include "TLegend.h"
 #include <algorithm>
-#include "TSpline.h"
 
-const int MINPOINT = 5;
-const int MAXPOINT = 40;
+int MINPOINT = 5;
+int MAXPOINT = 40;
 
 fitter::fitter(TGraph *in_gr,vector<double> HG,vector<double> LG,vector<double> TOT){
   c1 = new TCanvas();
@@ -27,6 +26,7 @@ fitter::~fitter(){
   delete c1;
   c1 = NULL;
 }
+
 void fitter::fit(int labelE ){
   if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
        || labelE == 100 || labelE == 150 || labelE == -1)) {
@@ -82,12 +82,11 @@ void fitter::fit(int labelE ){
 	sprintf(title,"Board_%i/HGLG_chip%i_ch%i",BD,SKI,true_ch);
 	tpr = (TProfile *)f.Get(title);
 	if(tpr == NULL) continue;
-	if(tpr->GetEntries() < 1500) continue;
-
+	
 	tpr->Rebin(rebinN);
 	
 	int nentry = tpr->GetEntries();
-	if( nentry < 1000 ) continue;
+	if( nentry < 1000 && labelE != -1 ) continue;
 	
 	sprintf(title,"Board%i_HGLG_chip%i_ch%i",BD,SKI,true_ch);
 	tpr->SetName(title);
@@ -408,9 +407,7 @@ void fitter::Find_low(TH1D* h1,double* lowx,double* lowy){
   *lowx = minx;
   *lowy = miny;
 }
-void fitter::Find_high(TH1D* h1,double* highx,double* highy){
-  double lowerbound = 200;
-  double upperbound = 300;
+void fitter::Find_high(TH1D* h1,double* highx,double* highy,double lowerbound ,double upperbound){
   
   int Nbin = h1->GetNbinsX ();
   double maxx = -1,maxy = -1;
@@ -684,12 +681,15 @@ void fitter::fit_Draw(){
 
 void fitter::fit_spline(int labelE){
   if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
-       || labelE == 100 || labelE == 150 )) {
+       || labelE == 100 || labelE == 150 || labelE == -1)) {
     cout << "invalid energy!" << endl;
     return;}
   
   char title[50];
-  sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
+  if(labelE == -1)
+    sprintf(title,"root_result/TPro.root");
+  else
+    sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
   TFile f(title);
 
   double p0_ARR[MAXBD][MAXSKI][MAXCH];
@@ -706,7 +706,7 @@ void fitter::fit_spline(int labelE){
   //h1->Rebin(rebinN);
   bool savepng = 0;
   //int stop_and_look = -1;
-  gROOT->SetBatch(kTRUE);
+  //gROOT->SetBatch(kTRUE);
   
   TF1 *linear = new TF1("","[0]+x*[i]",MINPOINT,150);
   linear->SetParLimits(0,-50,50);
@@ -743,7 +743,7 @@ void fitter::fit_spline(int labelE){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
 	  
-	  if( x > 0 && x < 300 && y != 0 && i%10 == 0){
+	  if( x > 0 && x < 300 && y != 0 && i%2 == 0){
 	    LG.push_back(x);
 	    HG.push_back(y);}
 	  if( x > 300 && y != 0 && i%5 == 0){
@@ -863,7 +863,7 @@ void fitter::fit_spline(int labelE){
 	  sat_good[BD][SKI][CH] = false;
 
 	c1->Update();
-	//c1->WaitPrimitive();
+	c1->WaitPrimitive();
 	
 	
 	delete s;delete h_derivative;
@@ -1211,8 +1211,8 @@ double fitter::spline_4nodes(double *x, double *par){
    return sp3.Eval(xx);
 }
 
-void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
-  
+void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title,string Y_title){
+  char label_char[50];
   //Ratio plot
   c1->cd();
   pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
@@ -1257,8 +1257,9 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   hratio->SetMaximum(0.1);
   hratio->SetMinimum(-0.1); 
   //hratio->Draw();
-  
-  hratio->GetYaxis()->SetTitle("#frac{HG - Fit}{Fit}");
+
+  sprintf(label_char,"#frac{%s - Fit}{Fit}",Y_title.c_str());
+  hratio->GetYaxis()->SetTitle(label_char);
   hratio->GetYaxis()->SetTitleOffset(0.35);
   hratio->GetYaxis()->SetLabelFont(43); 
   hratio->GetYaxis()->SetLabelSize(15);
@@ -1268,7 +1269,7 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   axis->Draw();
 
   axis = hratio->GetXaxis();
-  axis->SetTitle("LG");
+  axis->SetTitle(X_title.c_str());
   axis->SetLabelFont(43); // Absolute font size in pixel (precision 3)
   axis->SetLabelSize(15);
   
@@ -1291,6 +1292,168 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio){
   c1->Update();
   
   //getchar();
+}
+
+
+void fitter::fit_LGTOT(int labelE ){
+  if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
+       || labelE == 100 || labelE == 150 || labelE == -1)) {
+    cout << "invalid energy!" << endl;
+    return;}
+  char title[50];
+  if(labelE == -1)
+    sprintf(title,"root_result/400Bin/update/inj.root");
+  else
+    sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
+  TFile f(title);
+
+  TF1 *sat_fit   = new TF1("","pol1");
+
+  root_logon();
+  gStyle->SetOptStat(0);
+  TProfile *tpr = (TProfile *)f.Get("Board_7/LGTOT_chip2_ch44");
+  //  TProfile *tpr = new TProfile("","",200,0,800,0,4000);
+  TH1D *h1 = new TH1D("","",tpr->GetNbinsX(),0,800);
+  int rebinN = 1;
+  h1->Rebin(rebinN);
+  bool savepng = 0;
+  int stop_and_look = -1;
+  //gROOT->SetBatch(kTRUE);
+
+  MINPOINT = 300;
+  MAXPOINT = 500;
+  
+  for(int BD = 0 ;BD < MAXBD ; ++BD){
+    cout << "BD "<< BD << endl;
+    for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+      cout << "SKI "<< SKI << endl;
+      for(int CH = 0 ; CH < MAXCH ; ++CH){
+
+	sat_fit->SetRange(MINPOINT,MAXPOINT);
+        
+	int true_ch = CH*2;
+	sprintf(title,"Board_%i/LGTOT_chip%i_ch%i",BD,SKI,true_ch);
+	tpr = (TProfile *)f.Get(title);
+	if(tpr == NULL) continue;
+	 
+	tpr->Rebin(rebinN);
+	 
+	int nentry = tpr->GetEntries();
+	if( nentry < 1000 && labelE != -1 ) continue;
+	 
+	sprintf(title,"Board%i_LGTOT_chip%i_ch%i",BD,SKI,true_ch);
+	tpr->SetName(title);
+	tpr->SetTitle(title);
+ 
+	tpr->Fit(sat_fit,"QEMR0");
+	tpr->Draw();
+
+	sat_fit->Draw("same");
+	sat_fit->SetLineColor(6);
+	//c1->WaitPrimitive();
+	c1->Update();
+	//if(BD >= 5 && BD <= 15)
+	//  getchar();
+
+	int Nbin = tpr->GetNbinsX();
+	vector<double> LG,TOT;
+	LG.clear();
+	TOT.clear();
+	double continue_check_y = 400;
+	int point_counter = 0;
+	for(int i = 0 ; i < Nbin ; ++i){
+	  double x = tpr->GetBinCenter(i);
+	  double y = tpr->GetBinContent(i);
+	  if( abs(y - continue_check_y) > 100)
+	    continue;
+	  continue_check_y = y;
+	  point_counter++;
+	  if(point_counter == 5)
+	    point_counter = 0;
+	  
+	  if( y > 200 && point_counter == 0 ){
+	    if( x < 300 && y > 1000)
+	      continue;
+	    TOT.push_back(x);
+	    LG.push_back(y);
+	  }
+	}
+
+	
+	int np = LG.size();
+	if(np == 0) continue;
+	TSpline3 *s = new TSpline3("grs",&TOT[0],&LG[0],np);
+	
+	double diff = 0.1;
+	double h_start = 0;
+        double h_end   = 800;
+	TH1D *h_derivative = new TH1D("","",(h_end - h_start)/diff,h_start,h_end);
+	
+	double xx = h_start;
+	for(int i = 0 ; i < h_derivative->GetNbinsX() ; ++i){
+	  double x = h_derivative->GetBinCenter(i);
+	  double y = s->Derivative(xx);
+	  h_derivative->SetBinContent(i,y);
+	  xx += diff;}
+	h_derivative->SetMaximum(10);
+	h_derivative->SetMinimum(0);
+	Draw_Spline_and_1stderi(*tpr,*s,*h_derivative);
+	double localmax_x,localmax_y;
+	Find_high(h_derivative,&localmax_x,&localmax_y,250,600);
+	sat_fit->SetRange(localmax_x*0.95,localmax_x*1.05);
+	tpr->Fit(sat_fit,"QEMR0");
+	c1->Update();
+	getchar();
+
+
+	TH1D *h_res = new TH1D("","",tpr->GetNbinsX(),0,800);
+	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
+	  double x = tpr->GetBinCenter(i);
+	  double y = tpr->GetBinContent(i);
+	  if(x == 0 || y == 0) continue;
+	  //cout << "x = "<< x << ", y = " << y << endl;
+	  double res = ( y - sat_fit->Eval(x)) / sat_fit->Eval(x);
+	  double error = tpr->GetBinError(i)/(x*sat_fit->Eval(x));
+	  h_res->SetBinContent(i,res);
+	  h_res->SetBinError(i,error);	 }
+
+	ratio_plot(tpr,sat_fit,h_res,"TOT","LG");
+	getchar();
+      }
+    }
+  }
+  
+}
+
+void fitter::Draw_Spline_and_1stderi(TProfile& tpr, TSpline3 &s, TH1D& h_deri){
+  TPad pad1_sp("pad1_sp","",0,0,1,1);
+  TPad pad2_sp("pad2_sp","",0,0,1,1);
+
+  pad2_sp.SetFillColor(0);
+  pad2_sp.SetFillStyle(4000);
+  pad2_sp.SetFrameFillStyle(0);
+	
+  pad1_sp.Draw();
+  pad1_sp.cd();
+  s.SetLineColor(2);
+  s.SetLineWidth(1.5);
+  tpr.Draw();
+  tpr.SetXTitle("TOT");
+  tpr.SetYTitle("LG");
+  tpr.GetYaxis()->SetTitleOffset(1.2);
+  s.Draw("same");
+
+  pad2_sp.Draw();
+  pad2_sp.cd();
+  
+  h_deri.SetLineColor(3);
+  h_deri.SetLineWidth(1.5);
+  h_deri.GetXaxis()->SetNdivisions(0);
+  h_deri.GetYaxis()->SetTitle("1st_deri");
+  h_deri.GetYaxis()->SetTitleOffset(0.8);
+  h_deri.Draw("Y+");
+  
+  c1->cd();
 }
 
 void fitter::root_logon(){
@@ -1371,3 +1534,5 @@ gROOT->SetStyle("Plain");
 //gStyle->SetPadTickY(1);
 
 }
+
+

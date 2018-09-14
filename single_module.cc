@@ -141,12 +141,21 @@ void single_module::Fill_Tprofile(){
   
   TProfile *tpr_HGLG[MAXCHIP];
   TProfile *tpr_LGTOT[MAXCHIP];
+  TProfile *tpr_LGinj[MAXCHIP];
+  TProfile *tpr_TOTinj[MAXCHIP];
 
+  
   for(int chip = 0 ; chip < MAXCHIP ; ++chip){
     sprintf(title,"HGLG_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
     tpr_HGLG[chip] = new TProfile(title,title,400,0,800,0,4000);
     sprintf(title,"LGTOT_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
     tpr_LGTOT[chip] = new TProfile(title,title,300,0,800,0,3000);
+    
+    sprintf(title,"LGinj_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
+    tpr_LGinj[chip] = new TProfile(title,title,400,0,4000,0,2000);
+    sprintf(title,"TOTinj_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
+    tpr_TOTinj[chip] = new TProfile(title,title,400,0,4000,0,1000);
+    
   }
 
   for(int ev = 0 ; ev < nevents ; ++ev){
@@ -154,14 +163,17 @@ void single_module::Fill_Tprofile(){
     for(int hit = 0 ; hit < (int) HighGainADC->size() ; ++hit){
       if(channelID->at(hit) != inj_CH) continue;
       double HG,LG,TOT;
-      int chip;
+      int chip,inj_daq;
       HG   = HighGainADC->at(hit);
       LG   = LowGainADC->at(hit);
       TOT  = TotSlow->at(hit);
       chip = skirocID->at(hit);
+      inj_daq = (int) 4096./nevents * ev;
       if( LG < 5 ) continue;
       tpr_HGLG[chip]->Fill(LG,HG,1);
       tpr_LGTOT[chip]->Fill(TOT,LG,1);
+      tpr_LGinj[chip]->Fill(LG,inj_daq,1);
+      tpr_TOTinj[chip]->Fill(TOT,inj_daq,1);
     }
   }
   
@@ -186,7 +198,30 @@ void single_module::Fill_Tprofile(){
     tpr_LGTOT[ chip ]->SetMarkerSize(1.2);
     tpr_LGTOT[ chip ]->SetMarkerColor(chip+1);
     tpr_LGTOT[ chip ]->Write(title,TObject::kOverwrite);
+  
+
+    if(tpr_LGinj[ chip ]->GetEntries() == 0){
+      continue;}
+    sprintf(title,"LGinj_chip%i_ch%i",chip,inj_CH);
+    tpr_LGinj[ chip ]->SetTitle(title);
+    tpr_LGinj[ chip ]->SetName(title);
+    tpr_LGinj[ chip ]->SetMarkerStyle(20);
+    tpr_LGinj[ chip ]->SetMarkerSize(1.2);
+    tpr_LGinj[ chip ]->SetMarkerColor(chip+1);
+    tpr_LGinj[ chip ]->Write(title,TObject::kOverwrite);
+
+
+    if(tpr_TOTinj[ chip ]->GetEntries() == 0){
+      continue;}
+    sprintf(title,"TOTinj_chip%i_ch%i",chip,inj_CH);
+    tpr_TOTinj[ chip ]->SetTitle(title);
+    tpr_TOTinj[ chip ]->SetName(title);
+    tpr_TOTinj[ chip ]->SetMarkerStyle(20);
+    tpr_TOTinj[ chip ]->SetMarkerSize(1.2);
+    tpr_TOTinj[ chip ]->SetMarkerColor(chip+1);
+    tpr_TOTinj[ chip ]->Write(title,TObject::kOverwrite);
   }
+
   
 }
 
