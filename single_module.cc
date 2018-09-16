@@ -172,8 +172,8 @@ void single_module::Fill_Tprofile(){
       if( LG < 5 ) continue;
       tpr_HGLG[chip]->Fill(LG,HG,1);
       tpr_LGTOT[chip]->Fill(TOT,LG,1);
-      tpr_LGinj[chip]->Fill(LG,inj_daq,1);
-      tpr_TOTinj[chip]->Fill(TOT,inj_daq,1);
+      tpr_LGinj[chip]->Fill(inj_daq,LG,1);
+      tpr_TOTinj[chip]->Fill(inj_daq,TOT,1);
     }
   }
   

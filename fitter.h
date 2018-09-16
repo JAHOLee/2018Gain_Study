@@ -34,6 +34,7 @@ class fitter{
  double sat_point;
  double undershoot_percent;
 
+ string fname;
  
  private:
  

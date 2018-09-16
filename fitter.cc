@@ -34,9 +34,9 @@ void fitter::fit(int labelE ){
     return;}
   char title[50];
   if(labelE == -1)
-    sprintf(title,"root_result/400Bin/update/inj.root",labelE);
+    sprintf(title,"root_result/0916update/inj.root",labelE);
   else
-    sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
+    sprintf(title,"root_result/0916update/%iGeV_part.root",labelE);
   TFile f(title);
 
    // TF1 *sat_fit = new TF1("1st_try"," [1]* (TMath::Exp(x/[0]) / (TMath::Exp(x/[0]) + 1) -0.5 )",0,800);
@@ -687,9 +687,9 @@ void fitter::fit_spline(int labelE){
   
   char title[50];
   if(labelE == -1)
-    sprintf(title,"root_result/TPro.root");
+    sprintf(title,"root_result/0916update/inj.root",labelE);
   else
-    sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
+    sprintf(title,"root_result/0916update/%iGeV_part.root",labelE);
   TFile f(title);
 
   double p0_ARR[MAXBD][MAXSKI][MAXCH];
@@ -1302,9 +1302,10 @@ void fitter::fit_LGTOT(int labelE ){
     return;}
   char title[50];
   if(labelE == -1)
-    sprintf(title,"root_result/400Bin/update/inj.root");
+    sprintf(title,"root_result/0916update/inj.root",labelE);
   else
-    sprintf(title,"root_result/400Bin/update/%iGeV.root",labelE);
+    sprintf(title,"root_result/0916update/%iGeV_part.root",labelE);
+
   TFile f(title);
 
   TF1 *sat_fit   = new TF1("","pol1");
