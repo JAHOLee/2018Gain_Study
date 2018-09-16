@@ -152,9 +152,9 @@ void single_module::Fill_Tprofile(){
     tpr_LGTOT[chip] = new TProfile(title,title,300,0,800,0,3000);
     
     sprintf(title,"LGinj_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
-    tpr_LGinj[chip] = new TProfile(title,title,400,0,4000,0,2000);
+    tpr_LGinj[chip] = new TProfile(title,title,400,0,4000,0,3000);
     sprintf(title,"TOTinj_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
-    tpr_TOTinj[chip] = new TProfile(title,title,400,0,4000,0,1000);
+    tpr_TOTinj[chip] = new TProfile(title,title,400,0,4000,0,3000);
     
   }
 

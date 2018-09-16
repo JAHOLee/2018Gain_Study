@@ -190,6 +190,8 @@ void makePlots::Draw_HG_LG(){
   
   for(int ev = 0 ; ev < nevents ; ++ev){
     T_Rechit->GetEntry(ev);
+    if(ev % 10000 == 0)
+      cout << "Processing " << ev << " / " << nevents << " ..." << endl;
     //T_DWC   ->GetEntry(ev);
     
     for(int hit = 0 ; hit < (int) rechit_amplitudeHigh->size() ; ++hit){
