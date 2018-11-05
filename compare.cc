@@ -478,10 +478,5 @@ void compare::compare_method(int Ene){
 }
 
 void compare::compare_Data_Inj(){
-  int MAXBD = 28;
-  int MAXCHIP = 4;
-  int MAXCH = 32;
-  double HLcoeff[2][MAXBD][MAXCHIP][MAXCH];
-  double LTcoeff[2][MAXBD][MAXCHIP][MAXCH];
-
+  
 }

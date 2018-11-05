@@ -177,7 +177,7 @@ void makePlots::Draw_HG_LG(){
   TProfile *tpr_HGLG[MAXBD][MAXCHIP][MAXCH];
   TProfile *tpr_LGTOT[MAXBD][MAXCHIP][MAXCH];
   int tpr_LS[MAXBD][MAXCHIP][MAXCH];
-  h_tprLGUS = h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
+  h_tprLGUS = new TH1D("LG_US_tpr","LG_US_tpr",50,0,10);
   
   for(int BD = 0; BD < MAXBD ; ++BD){
     for(int chip = 0 ; chip < MAXCHIP ; ++chip){
@@ -209,6 +209,7 @@ void makePlots::Draw_HG_LG(){
       if( HG > 200 && LG < 20) tpr_LS[BD][chip][ch]++;
       if( LG < 5 ) continue;
       tpr_HGLG[BD][chip][ch]->Fill(LG,HG,1);
+      if( TOT < 100 ) continue;
       tpr_LGTOT[BD][chip][ch]->Fill(TOT,LG,1);
       
     }
