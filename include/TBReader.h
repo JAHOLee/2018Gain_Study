@@ -9,13 +9,16 @@
 #define TBReader_h
 
 #include "setup_config.h"
+#include "TFile.h"
 #include "TTree.h"
 #include "TROOT.h"
+#include "TProfile.h"
 #include "TApplication.h"
 #include "TChain.h"
 #include <string>
 #include <vector>
 #include <map>
+#include <fstream>
 
 using namespace std;
 
@@ -39,7 +42,7 @@ class TBReader{
   void Read_Module_List();
   void Ntuple_Maker();
   void TProfile_Maker();
-  
+  void dirty_way();
  private:
   
   TTree        *T_Rechit;
@@ -118,6 +121,8 @@ class TBReader{
    Double_t        b_x;
    Double_t        b_y;
   
-
 };
+
+extern void dirty_way();
+
 #endif

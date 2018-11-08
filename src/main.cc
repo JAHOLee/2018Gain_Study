@@ -1,10 +1,11 @@
 #include "single_module.h"
 #include "TBReader.h"
-#include "TFile.h"
 #include <fstream>
 #include <iostream>
 
+
 int main(){
+  dirty_way();
   TApplication *app = new TApplication("app",0,0);
   //fitter fit;
   //fit.fit_LGTOT(-1);
@@ -75,7 +76,8 @@ int main(){
 	TBReader TBReader(chain,chain2,filename);
 	TBReader.dirpath = dirpath;
 	//TBReader.Ntuple_Maker();
-	TBReader.TProfile_Maker();
+	//TBReader.TProfile_Maker();
+	TBReader.dirty_way();
 	delete chain;
 	delete chain2;
       }
@@ -92,3 +94,4 @@ int main(){
   
   return(0);
 }
+
