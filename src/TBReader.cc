@@ -294,8 +294,8 @@ void TBReader::TProfile_Maker(){
   TFile *outFile[MAXBOARDS];
   TTree *outTree_history[MAXBOARDS];
   int startBD = 0;
-  int endBD   = 30;
-  
+  int endBD   = MAXBOARDS;
+
   Read_Module_List();
 
   for(int ifile = startBD ; ifile < endBD ; ifile++){
@@ -404,14 +404,16 @@ void TBReader::TProfile_Maker(){
 	M.HG_LG[ifile][chip][ch]->Write(p_name,TObject::kOverwrite);
 	sprintf(p_name,"LG_TOT_chip%d_ch%d",chip,ch*2);
 	M.LG_TOT[ifile][chip][ch]->Write(p_name,TObject::kOverwrite);
+	delete M.HG_LG [ifile][chip][ch];
+	delete M.LG_TOT[ifile][chip][ch];
       }
     }
     outTree_history[ifile]->Write("Run_history",TObject::kOverwrite);
     
     outFile[ifile]->Close();
   }
-  delete[] outFile;
-  //delete[] outTree_history;
+  for(int i = 0 ; i < MAXBOARDS ; ++i){
+    delete outFile[i];  }
 
 }
 
