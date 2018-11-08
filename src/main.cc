@@ -27,17 +27,19 @@ int main(){
   
   //TChain *chain_single = new TChain("treeproducer/sk2cms");
 
+  string filename;
+  //string dirpath = "/afs/cern.ch/user/c/chchien/HG_LG/";
+  string dirpath = "./";
+  
   // Initialize output dirrectory
   TBReader init_dir;
+  init_dir.dirpath = dirpath;
   init_dir.Make_dir();
+  
   
   int TB_member     = 0;
   int single_member = 0;
   
-  string filename;
-  //string dirpath = "/afs/cern.ch/user/c/chchien/HG_LG/";
-  string dirpath = "./";
-
   string inputfile = "./data_input.txt";
   ifstream infile(inputfile.c_str());
   
@@ -50,11 +52,12 @@ int main(){
 
       TFile f( filename.c_str() );
       //check if root directories exist...
-      bool single_tree,pulseshape_tree,TB_ntuple;
+      bool single_tree,pulseshape_tree,TB_ntuple,trackimpactntupler;
       single_tree = f.GetListOfKeys()->Contains("treeproducer");
       pulseshape_tree = f.GetListOfKeys()->Contains("pulseshapeplotter");
       TB_ntuple   = f.GetListOfKeys()->Contains("rechitntupler");
-
+      trackimpactntupler = f.GetListOfKeys()->Contains("trackimpactntupler");
+      
       if(single_tree && pulseshape_tree){
 	single_member++;
 	TChain *chain_single  = new TChain("pulseshapeplotter/tree");
@@ -63,13 +66,14 @@ int main(){
 	S.Loop();
 	delete chain_single;
       }
-      else if(TB_ntuple){
+      else if(TB_ntuple && trackimpactntupler){
 	TB_member++;
 	TChain *chain  = new TChain("rechitntupler/hits");
 	TChain *chain2 = new TChain("trackimpactntupler/impactPoints");
 	chain ->Add(filename.c_str());
 	chain2->Add(filename.c_str());
 	TBReader TBReader(chain,chain2,filename);
+	TBReader.dirpath = dirpath;
 	//TBReader.Ntuple_Maker();
 	TBReader.TProfile_Maker();
 	delete chain;

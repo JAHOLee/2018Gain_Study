@@ -293,11 +293,12 @@ void TBReader::TProfile_Maker(){
   string outpath = string( dirpath + string("Module_TProfile") );
   TFile *outFile[MAXBOARDS];
   TTree *outTree_history[MAXBOARDS];
-  
+  int startBD = 0;
+  int endBD   = 30;
   
   Read_Module_List();
 
-  for(int ifile = 0 ; ifile < MAXBOARDS ; ifile++){
+  for(int ifile = startBD ; ifile < endBD ; ifile++){
     char fpath[150];
     
     // Check root file exist
@@ -334,7 +335,7 @@ void TBReader::TProfile_Maker(){
   MakePlots M;
   M.Init_Pointers();
   char p_name[200];
-  for(int ifile = 0 ; ifile < MAXBOARDS ; ifile++){
+  for(int ifile = startBD ; ifile < endBD ; ifile++){
     if(outFile[ifile] == NULL){ continue; }
     // Create if not exist
     bool exist = outFile[ifile]->GetListOfKeys()->Contains("HG_LG_chip0_ch0");
@@ -392,7 +393,7 @@ void TBReader::TProfile_Maker(){
   }
   cout << "End of looping evts" << endl;
 
-  for(int ifile = 0 ; ifile < MAXBOARDS ; ifile++){
+  for(int ifile = startBD ; ifile < endBD ; ifile++){
     if( outFile[ifile] == NULL ){ continue; }
     outFile[ifile]->cd();
     
@@ -409,7 +410,8 @@ void TBReader::TProfile_Maker(){
     
     outFile[ifile]->Close();
   }
-  
+  delete[] outFile;
+  //delete[] outTree_history;
 
 }
 
