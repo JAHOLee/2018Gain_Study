@@ -1,0 +1,5 @@
+# ignore all object files and test_data
+obj_file/*
+!obj_file/dummy
+test_data/*
+!test_data/dummy
