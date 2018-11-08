@@ -42,7 +42,7 @@ class TBReader{
   void Read_Module_List();
   void Ntuple_Maker();
   void TProfile_Maker();
-  void dirty_way();
+  void dirty_way(bool fexist);
  private:
   
   TTree        *T_Rechit;
@@ -123,6 +123,6 @@ class TBReader{
   
 };
 
-extern void dirty_way();
+extern bool dirty_way();
 
 #endif

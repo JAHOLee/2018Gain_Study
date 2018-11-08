@@ -425,27 +425,29 @@ void TBReader::TProfile_Maker(){
 }
 
 
-void TBReader::dirty_way(){
+void TBReader::dirty_way(bool fexist){
   Init();
   //Run selection
   if( PID != 0 ){ cout << "Not e- runs, skip for now." << endl; return; }
   
-  Read_Module_List(); 
-  int history_run = history->GetEntries();
-  bool doublefill = false;
-  for(int i = 0 ; i < history_run ; ++i){
-    history->GetEntry(i);
-    if(RUNNUM == RunN){ doublefill = true; }
+  Read_Module_List();
+  int history_run;
+  if(fexist){
+    history_run = history->GetEntries();
+    bool doublefill = false;
+    for(int i = 0 ; i < history_run ; ++i){
+      history->GetEntry(i);
+      if(RUNNUM == RunN){ doublefill = true; }
+    }
+    if(doublefill){
+      cout << "Run " << RunN << " double filled!" << endl;
+      return; }
   }
-  if(doublefill){
-    cout << "Run " << RunN << " double filled!" << endl;
-    return; }
   else{
     RUNNUM = RunN;
-    history->Fill();
-    f->cd();
-    history->Write("history",TObject::kOverwrite);}
-
+    history->Fill();}
+  
+  f->cd();
   cout << "Looping evts" << endl;
   for(int ev = 0 ; ev < nevents ; ++ev){
     T_Rechit->GetEntry(ev);
@@ -492,6 +494,7 @@ void TBReader::dirty_way(){
       }
     }
   }
+  history->Write("history",TObject::kOverwrite);
   cout << "Done!" << endl;
 
 }
@@ -533,7 +536,7 @@ bool TBReader::Check_run_filled(TTree* tree){
   return already_filled;
 }
 
-void dirty_way(){
+bool dirty_way(){
   char p_name[150];
   ifstream f_check("TPro.root");
   if( !f_check.good() ){
@@ -564,6 +567,7 @@ void dirty_way(){
     f = new TFile("TPro.root","update");
     history = (TTree*) f->Get("Run_history");
     history->SetBranchAddress("Runnum",&RUNNUM);
+    
     for(int BD = 0 ; BD < MAXBOARDS ; ++BD){
       for(int chip = 0 ; chip < MAXSKI ; ++chip){
 	for(int ch = 0 ; ch < MAXCH ; ++ch){	  
@@ -574,5 +578,6 @@ void dirty_way(){
 	}
       }
     }
-  }  
+  }
+  return dirty_way_fexist;
 }

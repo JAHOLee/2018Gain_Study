@@ -5,7 +5,7 @@
 
 
 int main(){
-  dirty_way();
+  bool fexist = dirty_way();
   TApplication *app = new TApplication("app",0,0);
   //fitter fit;
   //fit.fit_LGTOT(-1);
@@ -77,7 +77,7 @@ int main(){
 	TBReader.dirpath = dirpath;
 	//TBReader.Ntuple_Maker();
 	//TBReader.TProfile_Maker();
-	TBReader.dirty_way();
+	TBReader.dirty_way(fexist);
 	delete chain;
 	delete chain2;
       }
