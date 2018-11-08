@@ -158,14 +158,14 @@ void TBReader::Read_Module_List(){
   
   while(true){
     getline(infile,line);
-    if( infile.eof() ) {break;}
+    if( infile.eof() ) {break;};
     std::istringstream iss(line);
     for(int i = 0 ; i < members ; ++i){
       getline(iss,line_contents[i], ',' );}
     int ModuleID = std::stoi( line_contents[0] );
     Module_List[line_count] = ModuleID;
     moduleID2BDorder.insert( std::pair<int,int>(ModuleID,line_count) );
-    //cout << "Module "<< ModuleID << " corespond to BD " << line_count << endl;
+    //cout << "Module "<< ModuleID << " correspond to BD " << line_count << endl;
     line_count++;
   }
   infile.close();
@@ -285,6 +285,7 @@ void TBReader::Ntuple_Maker(){
 }
 
 void TBReader::TProfile_Maker(){
+  // TODO: Last Board will has large amount of TProfile, don't know why yet.
   Init();
   //Run selection
   if( PID != 0 ){ cout << "Not e- runs, skip for now." << endl; return; }
@@ -292,10 +293,11 @@ void TBReader::TProfile_Maker(){
   string outpath = string( dirpath + string("Module_TProfile") );
   TFile *outFile[MAXBOARDS];
   TTree *outTree_history[MAXBOARDS];
-
+  
+  
   Read_Module_List();
 
-  for(int ifile = 0 ; ifile < 1 ; ifile++){
+  for(int ifile = 0 ; ifile < MAXBOARDS ; ifile++){
     char fpath[150];
     
     // Check root file exist
@@ -330,8 +332,9 @@ void TBReader::TProfile_Maker(){
 
   // Set TProfile
   MakePlots M;
+  M.Init_Pointers();
   char p_name[200];
-  for(int ifile = 0 ; ifile < 1 ; ifile++){
+  for(int ifile = 0 ; ifile < MAXBOARDS ; ifile++){
     if(outFile[ifile] == NULL){ continue; }
     // Create if not exist
     bool exist = outFile[ifile]->GetListOfKeys()->Contains("HG_LG_chip0_ch0");
@@ -345,20 +348,21 @@ void TBReader::TProfile_Maker(){
 	}
       }
     }
+    //40,54,
     else{
       M.Init_TProfile(ifile);
       // Force write so all channels will exist
       for(int chip = 0 ; chip < MAXSKI ; ++chip){
 	for(int ch = 0 ; ch < MAXCH ; ++ch){
 	  sprintf(p_name,"HG_LG_chip%d_ch%d",chip,ch*2);
-	  M.HG_LG[ifile][chip][ch]->Write(p_name,TObject::kOverwrite);
+	  M.HG_LG[ifile][chip][ch]->Write(p_name);
 	  sprintf(p_name,"LG_TOT_chip%d_ch%d",chip,ch*2);
-	  M.LG_TOT[ifile][chip][ch]->Write(p_name,TObject::kOverwrite);
+	  M.LG_TOT[ifile][chip][ch]->Write(p_name);
 	}
       }
     }
   }  
-  
+  cout << "Looping evts" << endl;
   for(int ev = 0 ; ev < nevents ; ++ev){
     T_Rechit->GetEntry(ev);
     T_DWC->GetEntry(ev);
@@ -386,8 +390,9 @@ void TBReader::TProfile_Maker(){
     }
     
   }
-  
-  for(int ifile = 0 ; ifile < 1 ; ifile++){
+  cout << "End of looping evts" << endl;
+
+  for(int ifile = 0 ; ifile < MAXBOARDS ; ifile++){
     if( outFile[ifile] == NULL ){ continue; }
     outFile[ifile]->cd();
     
@@ -401,6 +406,7 @@ void TBReader::TProfile_Maker(){
       }
     }
     outTree_history[ifile]->Write("Run_history",TObject::kOverwrite);
+    
     outFile[ifile]->Close();
   }
   

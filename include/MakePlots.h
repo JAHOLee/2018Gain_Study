@@ -16,7 +16,7 @@ class MakePlots{
 
   //Function
   void Init_TProfile(int BD); //Init a module (4*32plots)
-
+  void Init_Pointers();
 };
 
 #endif
