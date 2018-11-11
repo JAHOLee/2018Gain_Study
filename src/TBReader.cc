@@ -10,12 +10,6 @@
 #include <utility>
 #include <sstream>
 #include <dirent.h>
-TProfile *HGLG [MAXBOARDS][MAXSKI][MAXCH];
-TProfile *LGTOT[MAXBOARDS][MAXSKI][MAXCH];
-int RUNNUM;
-TFile *f;
-TTree *history;
-bool dirty_way_fexist; 
 
 TBReader::TBReader(){
   cout << "Constructor of TBReader, blank constructor... " << endl;
@@ -290,164 +284,21 @@ void TBReader::Ntuple_Maker(){
 
 }
 
-void TBReader::TProfile_Maker(){
-  // TODO: Last Board will has large amount of TProfile, don't know why yet.
+void TBReader::TProfile_Maker(MakePlots *M){
+  
   Init();
   //Run selection
-  if( PID != 0 ){ cout << "Not e- runs, skip for now." << endl; return; }
-    
-  string outpath = string( dirpath + string("/Module_TProfile") );
-  TFile *outFile[MAXBOARDS];
-  TTree *outTree_history[MAXBOARDS];
-  int startBD = 0;
-  int endBD   = MAXBOARDS;
-
-  Read_Module_List();
-
-  for(int ifile = startBD ; ifile < endBD ; ifile++){
-    char fpath[150];
-    
-    // Check root file exist
-    int moduleID = Module_List[ifile];
-    sprintf(fpath,"%s/Module%d_Oct18.root",outpath.c_str(),moduleID);
-    
-    ifstream f_check(fpath);
-
-    if( !f_check.good() ){
-      outFile[ifile] = new TFile(fpath,"recreate");
-      outTree_history[ifile] = new TTree("Run_history","Run_history");
-
-      //Fill run history
-      int Run_hist;
-      outTree_history[ifile]->Branch("RunNumber",&Run_hist);
-      Run_hist = RunN; 
-      outTree_history[ifile]->Fill();
-    }
-    else{
-      outFile[ifile] = new TFile(fpath,"update");
-
-      // Check and update run_history      
-      outTree_history[ifile] = (TTree*)outFile[ifile]->Get("Run_history");
-      bool already_filled = Check_run_filled(outTree_history[ifile]);
-      if(already_filled){
-	cout << "Run " << RunN << " has already filled in "
-	     << fpath << ", skip it!"<< endl;
-	outFile[ifile] = NULL;
-      }
-    }
-  }
-
-  // Set TProfile
-  MakePlots M;
-  M.Init_Pointers();
-  char p_name[200];
-  for(int ifile = startBD ; ifile < endBD ; ifile++){
-    if(outFile[ifile] == NULL){ continue; }
-    // Create if not exist
-    sprintf(p_name,"HG_LG_BD%d_chip0_ch0",Module_List[ifile]);
-    bool exist = outFile[ifile]->GetListOfKeys()->Contains(p_name);
-    int moduleID = Module_List[ifile];
-    if(exist){
-      for(int chip = 0 ; chip < MAXSKI ; ++chip){
-	for(int ch = 0 ; ch < MAXCH ; ++ch){
-	  sprintf(p_name,"HG_LG_MID%d_chip%d_ch%d",moduleID,chip,ch*2);
-	  M.HG_LG[ifile][chip][ch] = (TProfile*)outFile[ifile]->Get(p_name);
-	  sprintf(p_name,"LG_TOT_MID%d_chip%d_ch%d",moduleID,chip,ch*2);
-	  M.LG_TOT[ifile][chip][ch] = (TProfile*)outFile[ifile]->Get(p_name);
-	}
-      }
-    }
-    //40,54,
-    else{
-      M.Init_TProfile(ifile);
-      // Force write so all channels will exist
-      for(int chip = 0 ; chip < MAXSKI ; ++chip){
-	for(int ch = 0 ; ch < MAXCH ; ++ch){
-	  sprintf(p_name,"HG_LG_chip%d_ch%d",chip,ch*2);
-	  M.HG_LG[ifile][chip][ch]->Write(p_name);
-	  sprintf(p_name,"LG_TOT_chip%d_ch%d",chip,ch*2);
-	  M.LG_TOT[ifile][chip][ch]->Write(p_name);
-	}
-      }
-    }
-  }  
-  cout << "Looping evts" << endl;
-  for(int ev = 0 ; ev < nevents ; ++ev){
-    T_Rechit->GetEntry(ev);
-    T_DWC->GetEntry(ev);
-    
-    //Event selection
-    if(dwcReferenceType != 15) continue;    
-
-    for(int ihit = 0 ; ihit < NRechits ; ++ihit){
-      
-      double HG,LG,TOT;
-      int chip,ch,BD_order,moduleID;
-      HG   = rechit_amplitudeHigh->at(ihit);
-      LG   = rechit_amplitudeLow->at(ihit);
-      TOT  = rechit_Tot->at(ihit);
-      chip = (int)rechit_chip->at(ihit);
-      ch   = (int)rechit_channel->at(ihit);
-      ch   /= 2;
-      moduleID = rechit_module->at(ihit);
-      BD_order = moduleID2BDorder.find(moduleID)->second;
-      if(outFile[BD_order] == NULL){ continue; }
-      if( LG < 5 ) continue;
-      M.HG_LG[BD_order][chip][ch]->Fill(LG,HG,1);
-      if( TOT < 100 ) continue;
-      M.LG_TOT[BD_order][chip][ch]->Fill(TOT,LG,1);      
-    }
-    
-  }
-  cout << "End of looping evts" << endl;
-
-  for(int ifile = startBD ; ifile < endBD ; ifile++){
-    if( outFile[ifile] == NULL ){ continue; }
-    outFile[ifile]->cd();
-    
-    //cout << outFile[ifile]->GetName() << endl;
-    for(int chip = 0 ; chip < MAXSKI ; ++chip){
-      for(int ch = 0 ; ch < MAXCH ; ++ch){
-	sprintf( p_name,"%s",M.HG_LG[ifile][chip][ch]->GetName() );
-	M.HG_LG[ifile][chip][ch]->Write(p_name,TObject::kOverwrite);
-	sprintf( p_name,"%s",M.LG_TOT[ifile][chip][ch]->GetName() );
-	M.LG_TOT[ifile][chip][ch]->Write(p_name,TObject::kOverwrite);
-	delete M.HG_LG [ifile][chip][ch];
-	delete M.LG_TOT[ifile][chip][ch];
-      }
-    }
-    outTree_history[ifile]->Write("Run_history",TObject::kOverwrite);
-    
-    outFile[ifile]->Close();
-    delete outFile[ifile];
-  }
-
-}
-
-
-void TBReader::dirty_way(bool fexist){
-  Init();
-  //Run selection
-  if( PID != 0 ){ cout << "Not e- runs, skip for now." << endl; return; }
+  if( PID != 0 ){ cout << "Not e- runs, skip Run "
+		       << RunN << " for now." << endl; return; }
   
   Read_Module_List();
-  int history_run;
-  if(fexist){
-    history_run = history->GetEntries();
-    bool doublefill = false;
-    for(int i = 0 ; i < history_run ; ++i){
-      history->GetEntry(i);
-      if(RUNNUM == RunN){ doublefill = true; }
-    }
-    if(doublefill){
-      cout << "Run " << RunN << " double filled!" << endl;
-      return; }
-  }
-  else{
-    RUNNUM = RunN;
-    history->Fill();}
-  
-  f->cd();
+
+  bool double_fill = M->Check_Run(RunN);
+  if(double_fill) {
+    cout << "Run " << RunN << " already filled in "
+	 << M-> TPro_output << " skip it!" << endl;
+    return;  }  
+
   cout << "Looping evts" << endl;
   for(int ev = 0 ; ev < nevents ; ++ev){
     T_Rechit->GetEntry(ev);
@@ -469,36 +320,13 @@ void TBReader::dirty_way(bool fexist){
       moduleID = rechit_module->at(ihit);
       BD_order = moduleID2BDorder.find(moduleID)->second;
       if( LG < 5 ) continue;
-      HGLG[BD_order][chip][ch]->Fill(LG,HG,1);
-      if( TOT < 100 ) continue;
-      LGTOT[BD_order][chip][ch]->Fill(TOT,LG,1);      
+      M->HG_LG[BD_order][chip][ch]->Fill(LG,HG,1);
+      if( TOT < 5 ) continue;
+      M->LG_TOT[BD_order][chip][ch]->Fill(TOT,LG,1);      
     }    
   }
   cout << "End of looping evts" << endl;
-
-  cout << "Writing TProfiles ..." << endl;
-  TDirectory *dir;
-  char title[50];
-  for(int BD = 0 ; BD < MAXBOARDS ; BD++){
-    sprintf(title,"Board_%i",BD);
-    dir = (TDirectory*)f->Get(title);
-    dir->cd();
-    for(int chip = 0 ; chip < MAXSKI ; ++chip){
-      for(int ch = 0 ; ch < MAXCH ; ++ch){
-	sprintf(title,"HGLG_chip%i_ch%i",chip,ch*2);
-	HGLG[BD][chip][ch]->SetTitle(title);
-	HGLG[BD][chip][ch]->Write(title,TObject::kOverwrite);
-	sprintf(title,"LGTOT_chip%i_ch%i",chip,ch*2);
-	LGTOT[BD][chip][ch]->SetTitle(title);
-	LGTOT[BD][chip][ch]->Write(title,TObject::kOverwrite);
-      }
-    }
-  }
-  history->Write("history",TObject::kOverwrite);
-  cout << "Done!" << endl;
-
 }
-
 
 bool TBReader::DirectoryExists( const char* pzPath ){
     if ( pzPath == NULL) return false;
@@ -536,48 +364,3 @@ bool TBReader::Check_run_filled(TTree* tree){
   return already_filled;
 }
 
-bool dirty_way(){
-  char p_name[150];
-  ifstream f_check("TPro.root");
-  if( !f_check.good() ){
-    dirty_way_fexist = true;
-    f = new TFile("TPro.root","recreate");
-    history = new TTree("Run_history","Run_history");
-    history->Branch("Runnum",&RUNNUM);
-    int HGLGBIN  = 400;
-    int LGTOTBIN = 200;  
-    char p_name[200],title[100];
-    TDirectory *dir;
-    for(int BD = 0 ; BD < MAXBOARDS ; ++BD){
-      dir = new TDirectory();
-      sprintf(title,"Board_%i",BD);
-      dir = f->mkdir(title);
-      for(int chip = 0 ; chip < MAXSKI ; ++chip){
-	for(int ch = 0 ; ch < MAXCH ; ++ch){	  
-	  sprintf(p_name,"HG_LG_BD%d_chip%d_ch%d",BD,chip,ch*2);
-	  HGLG[BD][chip][ch] = new TProfile(p_name,"",HGLGBIN,0,800,0,4000);
-	  sprintf(p_name,"LG_TOT_BD%d_chip%d_ch%d",BD,chip,ch*2);
-	  LGTOT[BD][chip][ch] = new TProfile(p_name,"",LGTOTBIN,0,800,0,2000);
-	}
-      }
-    }
-  } 
-  else{
-    dirty_way_fexist = false;
-    f = new TFile("TPro.root","update");
-    history = (TTree*) f->Get("Run_history");
-    history->SetBranchAddress("Runnum",&RUNNUM);
-    
-    for(int BD = 0 ; BD < MAXBOARDS ; ++BD){
-      for(int chip = 0 ; chip < MAXSKI ; ++chip){
-	for(int ch = 0 ; ch < MAXCH ; ++ch){	  
-	  sprintf(p_name,"BD%d/HG_LG_chip%d_ch%d",BD,chip,ch*2);
-	  HGLG[BD][chip][ch] = (TProfile*)f->Get(p_name);
-	  sprintf(p_name,"BD%d/LG_TOT_chip%d_ch%d",BD,chip,ch*2);
-	  LGTOT[BD][chip][ch] = (TProfile*)f->Get(p_name);
-	}
-      }
-    }
-  }
-  return dirty_way_fexist;
-}

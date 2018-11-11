@@ -2,10 +2,9 @@
 #include "TBReader.h"
 #include <fstream>
 #include <iostream>
-
+#include "TCanvas.h"
 
 int main(){
-  bool fexist = dirty_way();
   TApplication *app = new TApplication("app",0,0);
   //fitter fit;
   //fit.fit_LGTOT(-1);
@@ -43,11 +42,18 @@ int main(){
   
   string inputfile = "./data_input.txt";
   ifstream infile(inputfile.c_str());
+
+  string TProfileoutname = "TPro_test.root";
+  MakePlots *M = new MakePlots;
+  M->Init_TFile(TProfileoutname);
+  //TCanvas *c1 = new TCanvas();
   
   while(true){
     
     infile >> filename;
-    if(infile.eof()) break;
+    if(infile.eof()) {
+      M-> Write_TProfile();
+      break;}
     if( filename.length() > 2){
       cout << "input file: " << filename << endl;
 
@@ -77,7 +83,9 @@ int main(){
 	TBReader.dirpath = dirpath;
 	//TBReader.Ntuple_Maker();
 	//TBReader.TProfile_Maker();
-	TBReader.dirty_way(fexist);
+	TBReader.TProfile_Maker(M);
+	if(TB_member %5 == 0){
+	  M-> Write_TProfile();}
 	delete chain;
 	delete chain2;
       }

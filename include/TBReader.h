@@ -9,6 +9,7 @@
 #define TBReader_h
 
 #include "setup_config.h"
+#include "MakePlots.h"
 #include "TFile.h"
 #include "TTree.h"
 #include "TROOT.h"
@@ -41,8 +42,8 @@ class TBReader{
   void Make_dir();
   void Read_Module_List();
   void Ntuple_Maker();
-  void TProfile_Maker();
-  void dirty_way(bool fexist);
+  void TProfile_Maker(MakePlots *M);
+
  private:
   
   TTree        *T_Rechit;
@@ -122,7 +123,5 @@ class TBReader{
    Double_t        b_y;
   
 };
-
-extern bool dirty_way();
 
 #endif
