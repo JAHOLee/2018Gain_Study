@@ -8,8 +8,6 @@
 #include "TTree.h"
 #include "TChain.h"
 #include <utility>
-#include <sstream>
-#include <dirent.h>
 
 TBReader::TBReader(){
   cout << "Constructor of TBReader, blank constructor... " << endl;
@@ -140,81 +138,15 @@ void TBReader::Init(){
   Init_Beaminfo();
 }
 
-void TBReader::Read_Module_List(){
-  // Using the first configuration so all boards are included
-  string Module_Layout = "./configs/all_config.csv";
-  // 6-Nov-2018 copy from
-  // https://docs.google.com/spreadsheets/d/1KcvFr3JG69plQeVy4AA8nI63ZuTMc6hGDWGwo-F5xPE/edit#gid=337823033
-  
-  ifstream infile(Module_Layout.c_str());
-  string line;
-  int line_count = 0;
-  int members = 6;
-  string line_contents[members];
-  
-  // Get the headers
-  getline(infile,line); 
-  getline(infile,line);
-  
-  while(true){
-    getline(infile,line);
-    if( infile.eof() ) {break;};
-    std::istringstream iss(line);
-    for(int i = 0 ; i < members ; ++i){
-      getline(iss,line_contents[i], ',' );}
-    int ModuleID = std::stoi( line_contents[0] );
-    Module_List[line_count] = ModuleID;
-    moduleID2BDorder.insert( std::pair<int,int>(ModuleID,line_count) );
-    //cout << "Module "<< ModuleID << " correspond to BD " << line_count << endl;
-    line_count++;
-  }
-  infile.close();
-}
-
-void TBReader::Make_dir(){
-
-  cout << "Creating output directories..., will skip if exist..." << endl;
-  Read_Module_List();
-  
-  string outpath = string( dirpath + string("/Module_Ntuple") );
-
-  if( DirectoryExists(outpath.c_str()) ){
-    cout << outpath << " has already exist, give up creating other dirs..."
-	 << endl;
-    return;}
-
-  char command[150];
-  int file_check = 0;
-  sprintf(command,"mkdir -p %s",outpath.c_str());
-  file_check += system(command);
-
-  char dirname[150];
-  sprintf(dirname,"%s/TB",outpath.c_str() );
-  sprintf(command,"mkdir -p %s",dirname);
-  file_check += system(command);
-
-  sprintf(dirname,"%s/Inj",outpath.c_str() );
-  sprintf(command,"mkdir -p %s",dirname);
-  file_check += system(command);
-
-  string tpro_outpath = string( dirpath + string("/Module_TProfile") );
-  sprintf(dirname,"%s",tpro_outpath.c_str() );
-  sprintf(command,"mkdir -p %s",dirname);
-  file_check += system(command);
-
-  
-  cout << "Output directories has been created ... " << endl;
-}
-
-void TBReader::Ntuple_Maker(){
+void TBReader::Ntuple_Maker(setup_config *SC){
   Init();
   
-  string outpath = string( dirpath + string("/Module_Ntuple") );
+  string outpath = string( dirpath + string("Module_Ntuple") );
   TFile *outNtuple[MAXBOARDS];
   TTree *outTree[MAXBOARDS];
   TTree *outTree_history[MAXBOARDS];
 
-  Read_Module_List();
+
   // Variable for output trees
   // vector<unsigned int> *TB_chip;
   // vector<unsigned int> *TB_channel;
@@ -224,7 +156,7 @@ void TBReader::Ntuple_Maker(){
     char fpath[200];
     
     // Check root file exist
-    int moduleID = Module_List[ifile];
+    int moduleID = SC->Module_List[ifile];
     sprintf(fpath,"%s/TB/Module%d_Oct18.root",outpath.c_str(),moduleID);
     
     ifstream f_check(fpath);
@@ -284,14 +216,13 @@ void TBReader::Ntuple_Maker(){
 
 }
 
-void TBReader::TProfile_Maker(MakePlots *M){
+void TBReader::TProfile_Maker(setup_config *SC,MakePlots *M){
   
   Init();
   //Run selection
-  if( PID != 0 ){ cout << "Not e- runs, skip Run "
+  if( PID == 2 ){ cout << "Not e-/pi runs, skip Run "
 		       << RunN << " for now." << endl; return; }
   
-  Read_Module_List();
 
   bool double_fill = M->Check_Run(RunN);
   if(double_fill) {
@@ -318,7 +249,7 @@ void TBReader::TProfile_Maker(MakePlots *M){
       ch   = (int)rechit_channel->at(ihit);
       ch   /= 2;
       moduleID = rechit_module->at(ihit);
-      BD_order = moduleID2BDorder.find(moduleID)->second;
+      BD_order = SC->moduleID2BDorder.find(moduleID)->second;
       if( LG < 5 ) continue;
       M->HG_LG[BD_order][chip][ch]->Fill(LG,HG,1);
       if( TOT < 5 ) continue;
@@ -326,23 +257,6 @@ void TBReader::TProfile_Maker(MakePlots *M){
     }    
   }
   cout << "End of looping evts" << endl;
-}
-
-bool TBReader::DirectoryExists( const char* pzPath ){
-    if ( pzPath == NULL) return false;
- 
-    DIR *pDir;
-    bool bExists = false;
- 
-    pDir = opendir (pzPath);
- 
-    if (pDir != NULL)
-    {
-        bExists = true;    
-        (void) closedir (pDir);
-    }
- 
-    return bExists;
 }
 
 bool TBReader::Check_run_filled(TTree* tree){

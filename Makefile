@@ -6,6 +6,7 @@ SRCTXT= cc
 SOURCES= $(shell find $(SRCDIR) -type f -name *.$(SRCTXT))
 OBJECTS= $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCTXT)=.o))
 INC=-I include
+INCDIR= include
 
 CXXFLAGS=-g -m64 -O2 -Wall -std=c++0x $(INC)
 ROOTFLAGS=$(shell root-config --libs --cflags --glibs)
@@ -13,7 +14,10 @@ ROOTFLAGS=$(shell root-config --libs --cflags --glibs)
 $(TARGET): $(OBJECTS)
 	g++ $^ -o $@ $(CXXFLAGS) $(ROOTFLAGS)
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCTXT)
+$(BUILDDIR)/main.o: $(SRCDIR)/main.cc
+	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCTXT) $(INCDIR)/%.h
 	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
 
 clean:

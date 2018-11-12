@@ -16,12 +16,7 @@
 #include "TProfile.h"
 #include "TApplication.h"
 #include "TChain.h"
-#include <string>
 #include <vector>
-#include <map>
-#include <fstream>
-
-using namespace std;
 
 
 class TBReader{
@@ -39,25 +34,21 @@ class TBReader{
   TCanvas *c1;
 
   // Working functions called by main.cc
-  void Make_dir();
-  void Read_Module_List();
-  void Ntuple_Maker();
-  void TProfile_Maker(MakePlots *M);
+  void Ntuple_Maker(setup_config *SC);
+  void TProfile_Maker(setup_config *SC, MakePlots *M);
 
  private:
   
+  //member  
   TTree        *T_Rechit;
   TTree        *T_DWC;
   int nevents;
-  int Module_List[MAXBOARDS];
-  std::map<int,int> moduleID2BDorder;
   
   // Mainframe functions
   void Init(); // Run all initial stuff 
   void Init_Pointers(); // give all pointer = 0 value
   void SetRootBranch(); // Set input root branch
   void Init_Beaminfo(); // Read Run information from root
-  bool DirectoryExists( const char* pzPath ); // Check if a directory exist
   bool Check_run_filled(TTree* tree); // Check if a run was already filled by
                                       // look into the Run_history tree
   

@@ -5,11 +5,9 @@
 #include "TProfile.h"
 #include "TFile.h"
 #include "TTree.h"
-#include <string>
-using namespace std;
 class MakePlots{
  public:
-  MakePlots();
+  MakePlots(setup_config *SC);
   ~MakePlots();
   
   //TProfile members
@@ -17,9 +15,12 @@ class MakePlots{
   TProfile *LG_TOT[MAXBOARDS][MAXSKI][MAXCH];
  
   // Function
-  void Init_TFile(string TPro_outputname);
+  bool Init_TFile(string TPro_outputname);
   void Write_TProfile();  // Takes time, fill every few runs
   bool Check_Run(int RunN);
+
+  // Drawing Function
+  void root_logon();
   
   // member
   bool file_exist;
@@ -33,7 +34,7 @@ class MakePlots{
 
   TFile *TPro_root;
   TTree *TPro_history;
-  
+  setup_config *mysetup;
 };
 
 #endif

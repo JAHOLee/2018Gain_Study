@@ -1,38 +1,52 @@
 #include "MakePlots.h"
 #include <iostream>
 #include <fstream>
+#include "TROOT.h"
 #include "TCanvas.h"
+#include "TStyle.h"
 
-MakePlots::MakePlots(){
+MakePlots::MakePlots(setup_config *SC){
   cout << "Constructor of MakePlots ..." << endl;
+  mysetup = SC;
 }
 MakePlots::~MakePlots(){
   cout << "Destructor of MakePlots ..." << endl;
 }
 
-void MakePlots::Init_TFile(string TPro_outputname){
+bool MakePlots::Init_TFile(string TPro_outputname){
   Init_Pointers();
   ifstream f_check(TPro_outputname.c_str());
   file_exist = f_check.good();
   TPro_output = TPro_outputname;
-  char p_name[200];
+  char p_name[200],HGLG_name[200],LGTOT_name[200];
   if(file_exist){
     TPro_root = new TFile(TPro_outputname.c_str(),"update");
+    // Check TTree exist
     TPro_history = (TTree*)TPro_root->Get("history");
+    if(TPro_history == NULL){ 
+      cout << "\nInput file has no object named " << "history! " << endl;
+      cout << "Please choose another root file or create one.\n\n" << endl;
+      return false;}
     TPro_history -> SetBranchAddress("history_Run",&history_Run);
-
+    
     // Get the TProfiles
     for(int BD = 0 ; BD < MAXBOARDS ; ++BD){
       for(int chip = 0 ; chip < MAXSKI ; ++chip){
-	for(int ch = 0 ; ch < MAXCH ; ++ch){	  
-	  sprintf(p_name,"Board%d/HGLG_chip%d_ch%d",BD,chip,ch*2);
-	  HG_LG[BD][chip][ch] = (TProfile*)TPro_root->Get(p_name);
-	  sprintf(p_name,"Board%d/LGTOT_chip%d_ch%d",BD,chip,ch*2);
-	  LG_TOT[BD][chip][ch] = (TProfile*)TPro_root->Get(p_name);
+	for(int ch = 0 ; ch < MAXCH ; ++ch){
+	  int moduleID = mysetup->Module_List[BD];
+	  sprintf(HGLG_name,"Module%d/HGLG_chip%d_ch%d",moduleID,chip,ch*2);
+	  sprintf(LGTOT_name,"Module%d/LGTOT_chip%d_ch%d",moduleID,chip,ch*2);
+	  HG_LG[BD][chip][ch] = (TProfile*)TPro_root->Get(HGLG_name);
+	  LG_TOT[BD][chip][ch] = (TProfile*)TPro_root->Get(LGTOT_name);
+	  // Check TProfile exist
+	  if(HG_LG[BD][chip][ch] == NULL || LG_TOT[BD][chip][ch] == NULL){
+	    cout << "\nFile " << TPro_outputname << " has no object named "
+		 << HGLG_name << " or " << LGTOT_name << "\n"
+		 << "Please choose another root file or create one.\n" << endl;
+	    return false; }
 	}
       }
     }
-
   }
   else{
     TPro_root = new TFile(TPro_outputname.c_str(),"recreate");
@@ -44,10 +58,11 @@ void MakePlots::Init_TFile(string TPro_outputname){
   
     for(int BD = 0 ; BD < MAXBOARDS ; ++BD){
       for(int chip = 0 ; chip < MAXSKI ; ++chip){
-	for(int ch = 0 ; ch < MAXCH ; ++ch){	  
-	  sprintf(p_name,"HG_LG_BD%d_chip%d_ch%d",BD,chip,ch*2);
+	for(int ch = 0 ; ch < MAXCH ; ++ch){
+	  int moduleID = mysetup->Module_List[BD];	  
+	  sprintf(p_name,"HG_LG_Module%d_chip%d_ch%d",moduleID,chip,ch*2);
 	  HG_LG[BD][chip][ch] = new TProfile(p_name,"",HGLGBIN,0,800,0,4000);
-	  sprintf(p_name,"LG_TOT_BD%d_chip%d_ch%d",BD,chip,ch*2);
+	  sprintf(p_name,"LG_TOT_Module%d_chip%d_ch%d",moduleID,chip,ch*2);
 	  LG_TOT[BD][chip][ch] = new TProfile(p_name,"",LGTOTBIN,0,800,0,2000);
 	  HG_LG[BD][chip][ch]->SetMarkerStyle(22);
 	  HG_LG[BD][chip][ch]->SetMarkerColor(chip);
@@ -59,6 +74,7 @@ void MakePlots::Init_TFile(string TPro_outputname){
       }
     }
   }
+  return true;
 }
 void MakePlots::Init_Pointers(){
   for(int BD = 0 ; BD < MAXBOARDS ; ++BD){
@@ -93,7 +109,7 @@ void MakePlots::Write_TProfile(){
   char title[50];
   
   for(int BD = 0 ; BD < MAXBOARDS ; BD++){
-    sprintf(title,"Board%i",BD);
+    sprintf(title,"Module%i",mysetup->Module_List[BD]);
     if(!file_exist){
       dir = new TDirectory();
       dir = TPro_root->mkdir(title); }
@@ -117,3 +133,82 @@ void MakePlots::Write_TProfile(){
   
   file_exist = true;
 }
+void MakePlots::root_logon(){
+
+cout << endl << "Welcome to the ATLAS rootlogon.C" << endl;
+//
+// based on a style file from BaBar
+//
+
+//..BABAR style from RooLogon.C in workdir
+TStyle *atlasStyle= new TStyle("ATLAS","Atlas style");
+
+// use plain black on white colors
+ Int_t icol=0;
+atlasStyle->SetFrameBorderMode(icol);
+atlasStyle->SetCanvasBorderMode(icol);
+atlasStyle->SetPadBorderMode(icol);
+atlasStyle->SetPadColor(icol);
+atlasStyle->SetCanvasColor(icol);
+atlasStyle->SetStatColor(icol);
+//atlasStyle->SetFillColor(icol);
+
+// set the paper & margin sizes
+atlasStyle->SetPaperSize(20,26);
+atlasStyle->SetPadTopMargin(0.1);
+//atlasStyle->SetPadRightMargin(0.05);
+atlasStyle->SetPadRightMargin(0.12);
+atlasStyle->SetPadBottomMargin(0.16);
+atlasStyle->SetPadLeftMargin(0.12);
+
+// use large fonts
+//Int_t font=72;
+Int_t font=32;
+Double_t tsize=0.05;
+atlasStyle->SetTextFont(font);
+
+
+atlasStyle->SetTextSize(tsize);
+atlasStyle->SetLabelFont(font,"x");
+atlasStyle->SetTitleFont(font,"x");
+atlasStyle->SetLabelFont(font,"y");
+atlasStyle->SetTitleFont(font,"y");
+atlasStyle->SetLabelFont(font,"z");
+atlasStyle->SetTitleFont(font,"z");
+
+atlasStyle->SetLabelSize(tsize,"x");
+atlasStyle->SetTitleSize(tsize,"x");
+atlasStyle->SetLabelSize(tsize,"y");
+atlasStyle->SetTitleSize(tsize,"y");
+atlasStyle->SetLabelSize(tsize,"z");
+atlasStyle->SetTitleSize(tsize,"z");
+//atlasStyle->SetTitleOffset(1.2,"y");
+
+//use bold lines and markers
+atlasStyle->SetMarkerStyle(20);
+atlasStyle->SetMarkerSize(1.2);
+atlasStyle->SetHistLineWidth(2.);
+atlasStyle->SetLineStyleString(2,"[12 12]"); // postscript dashes
+
+//get rid of X error bars and y error bar caps
+//atlasStyle->SetErrorX(0.001);
+
+//do not display any of the standard histogram decorations
+//atlasStyle->SetOptTitle(0);
+//atlasStyle->SetOptStat(1111);
+atlasStyle->SetOptStat(0);
+//atlasStyle->SetOptFit(1111);
+atlasStyle->SetOptFit(0);
+
+// put tick marks on top and RHS of plots
+atlasStyle->SetPadTickX(1);
+atlasStyle->SetPadTickY(1);
+ 
+
+gROOT->SetStyle("Plain");
+
+//gStyle->SetPadTickX(1);
+//gStyle->SetPadTickY(1);
+
+}
+
