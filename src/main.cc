@@ -99,7 +99,7 @@ void main_make_TProfile(string TProfile_name){
   setup_config *SC = new setup_config;
   SC->dirpath = main_outpath;
   SC->Make_dir();
-  SC->Read_Module_List(Module_configfile,config); // Set ModuleID List && map
+  SC->Read_Module_List(Module_configfile); // Set ModuleID List && map
   
   int TB_member     = 0;
   int single_member = 0;
