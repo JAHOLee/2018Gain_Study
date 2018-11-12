@@ -14,8 +14,8 @@ ROOTFLAGS=$(shell root-config --libs --cflags --glibs)
 $(TARGET): $(OBJECTS)
 	g++ $^ -o $@ $(CXXFLAGS) $(ROOTFLAGS)
 
-$(BUILDDIR)/main.o: $(SRCDIR)/main.cc
-	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
+$(BUILDDIR)/main.o: $(SRCDIR)/main.cc $(SRCDIR)/setup_config.cc
+	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $^ -o $@
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCTXT) $(INCDIR)/%.h
 	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
