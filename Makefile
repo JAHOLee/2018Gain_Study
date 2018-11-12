@@ -15,7 +15,7 @@ $(TARGET): $(OBJECTS)
 	g++ $^ -o $@ $(CXXFLAGS) $(ROOTFLAGS)
 
 $(BUILDDIR)/main.o: $(SRCDIR)/main.cc
-	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $^ -o $@
+	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCTXT) $(INCDIR)/%.h
 	g++ -c $(CXXFLAGS) $(ROOTFLAGS) $< -o $@
