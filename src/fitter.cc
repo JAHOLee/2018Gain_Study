@@ -12,31 +12,33 @@
 int MINPOINT = 5;
 int MAXPOINT = 40;
 
-fitter::fitter(){
-
+fitter::fitter(setup_config *SC,string filename){
+  mysetup = SC;
+  fname = filename;
+  c1 = new TCanvas();
 }
 fitter::~fitter(){
 }
 void fitter::DEBUG(){
   
-  char title[50];
-  for(int labelE = 0 ; labelE < 4 ; ++labelE){
+  // char title[50];
+  // for(int labelE = 0 ; labelE < 4 ; ++labelE){
     
   
-    if(labelE % 2 == 0)
-      sprintf(title,"root_result/0916update/inj.root");
-    else
-      sprintf(title,"root_result/0916update/%iGeV.root",100);
+  //   if(labelE % 2 == 0)
+  //     sprintf(title,"root_result/0916update/inj.root");
+  //   else
+  //     sprintf(title,"root_result/0916update/%iGeV.root",100);
 
-    TFile f(title);
+  //   TFile f(title);
 
-    TProfile *tpr = (TProfile *)f.Get("Board_7/HGLG_chip2_ch44");
-    sprintf(title,"Board_%i/HGLG_chip%i_ch%i",0,1,2);
-    tpr = (TProfile *)f.Get(title);
+  //   TProfile *tpr = (TProfile *)f.Get("Board_7/HGLG_chip2_ch44");
+  //   sprintf(title,"Board_%i/HGLG_chip%i_ch%i",0,1,2);
+  //   tpr = (TProfile *)f.Get(title);
     
 
-    f.Close();
-  }
+  //   f.Close();
+  // }
 }
 
 void fitter::fit(int labelE){
@@ -65,7 +67,7 @@ void fitter::fit(int labelE){
   double p1_ARR[MAXBD][MAXSKI][MAXCH];
   double sat_ARR[MAXBD][MAXSKI][MAXCH];
   bool   sat_good[MAXBD][MAXSKI][MAXCH];
-  root_logon();
+ 
   gStyle->SetOptStat(0);
   TProfile *tpr = (TProfile *)f.Get("Board_7/HGLG_chip2_ch44");
   //  TProfile *tpr = new TProfile("","",200,0,800,0,4000);
@@ -710,31 +712,21 @@ void fitter::fit_Draw(){
 
 }
 
-void fitter::fit_spline(int labelE){
-  if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
-       || labelE == 100 || labelE == 150 || labelE == -1)) {
-    cout << "invalid energy!" << endl;
-    return;}
+void fitter::fit_spline(){
   
   char title[50];
-  if(labelE == -1)
-    sprintf(title,"root_result/0916update/inj.root");
-  else if(labelE == 100){
-    sprintf(title,"TPro_ele.root");}
-  else
-    sprintf(title,"root_result/0916update/%iGeV.root",labelE);
 
-  TFile f(title);
+  TFile f(fname.c_str());
   
-  double p0_ARR[MAXBD][MAXSKI][MAXCH];
-  double p1_ARR[MAXBD][MAXSKI][MAXCH];
-  double sat_ARR[MAXBD][MAXSKI][MAXCH];
-  bool   sat_good[MAXBD][MAXSKI][MAXCH];
-  int    tpr_entry[MAXBD][MAXSKI][MAXCH];
+  double p0_ARR[MAXBOARDS][MAXSKI][MAXCH];
+  double p1_ARR[MAXBOARDS][MAXSKI][MAXCH];
+  double sat_ARR[MAXBOARDS][MAXSKI][MAXCH];
+  bool   sat_good[MAXBOARDS][MAXSKI][MAXCH];
+  int    tpr_entry[MAXBOARDS][MAXSKI][MAXCH];
   
 
   gStyle->SetOptStat(0);
-  TProfile *tpr = (TProfile *)f.Get("Board_7/HGLG_chip2_ch44");
+  TProfile *tpr;
   //TH1D *h1 = new TH1D("","",tpr->GetNbinsX(),0,800);
   int rebinN = 2;
   //h1->Rebin(rebinN);
@@ -748,25 +740,26 @@ void fitter::fit_spline(int labelE){
   TPad pad2_sp("pad2_sp","",0,0,1,1);
 
   //Loop over all channels (Get TProfile)
-  for(int BD = 0 ;BD < MAXBD ; ++BD){
+  for(int BD = 0 ;BD < MAXBOARDS ; ++BD){
+    int moduleID = mysetup->Module_List[BD];
     cout << "HGLG BD "<< BD << endl;
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       cout << "SKI "<< SKI << endl;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
-	cout << "CH " << CH << endl;
+	//cout << "CH " << CH << endl;
 	p0_ARR[BD][SKI][CH] = -999;
 	p1_ARR[BD][SKI][CH] = -999;
 	sat_ARR[BD][SKI][CH] = -999;
 	sat_good[BD][SKI][CH] = false;
 	tpr_entry[BD][SKI][CH] = 0;
 	int true_ch = CH*2;
-	sprintf(title,"Board_%i/HGLG_chip%i_ch%i",BD,SKI,true_ch);
+	sprintf(title,"Module%i/HGLG_chip%i_ch%i",moduleID,SKI,true_ch);
 	tpr = (TProfile *)f.Get(title);
 	if(tpr == NULL) continue;
 	tpr_entry[BD][SKI][CH] = tpr->GetEntries();
-	if(labelE != -1 && tpr->GetEntries() < 1500) continue;
+	if(tpr->GetEntries() < 1500) continue;
 
-	sprintf(title,"Board%i_HGLG_chip%i_ch%i",BD,SKI,true_ch);
+	sprintf(title,"Module%i_HGLG_chip%i_ch%i",moduleID,SKI,true_ch);
 	tpr->Rebin(rebinN);
 	tpr->SetName(title);
 	tpr->SetTitle(title);
@@ -776,7 +769,8 @@ void fitter::fit_spline(int labelE){
 	vector<double> HG,LG;
 	HG.clear();
 	LG.clear();
-	int get_pt_for_each = (labelE == -1) ? 2 : 8;
+	//int get_pt_for_each = (labelE == -1) ? 2 : 8;
+	int get_pt_for_each = 8;
 	for(int i = 0 ; i < Nbin ; ++i){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
@@ -928,20 +922,20 @@ void fitter::fit_spline(int labelE){
   }
   
 
-  // Calculate avg per chip
-  double p0_avg[MAXBD][MAXSKI];
-  double p1_avg[MAXBD][MAXSKI];
-  double sat_avg[MAXBD][MAXSKI];
-  int    count_avg[MAXBD][MAXSKI];
+  // Calculate avg per chip 
+  double p0_avg[MAXBOARDS][MAXSKI];
+  double p1_avg[MAXBOARDS][MAXSKI];
+  double sat_avg[MAXBOARDS][MAXSKI];
+  int    count_avg[MAXBOARDS][MAXSKI];
   
-  for(int BD = 0 ;BD < MAXBD ; ++BD){
+  for(int BD = 0 ;BD < MAXBOARDS ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       p0_avg[BD][SKI] = 0;
       p1_avg[BD][SKI] = 0;
       sat_avg[BD][SKI] = 0;
       count_avg[BD][SKI] = 0;    }}
 
-  for(int BD = 0 ;BD < MAXBD ; ++BD){
+  for(int BD = 0 ;BD < MAXBOARDS ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	if(sat_ARR[BD][SKI][CH] == -999 || sat_good[BD][SKI][CH] == false)
@@ -975,7 +969,7 @@ void fitter::fit_spline(int labelE){
   outtree->Branch("tpr_entry",&m_tpr_entry,"tpr_entry/D");
   
   
-  for(int BD = 0 ;BD < MAXBD ; ++BD){
+  for(int BD = 0 ;BD < MAXBOARDS ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	layerID  = BD;
@@ -992,15 +986,15 @@ void fitter::fit_spline(int labelE){
 	m_tpr_entry = tpr_entry[BD][SKI][CH];
 	m_goodsat = sat_good[BD][SKI][CH];
 
+	outtree->Fill();
+	
 	opt_val[(BD*4+SKI)*32+CH].L_ID = BD;
 	opt_val[(BD*4+SKI)*32+CH].S_ID = SKI;
 	opt_val[(BD*4+SKI)*32+CH].C_ID = CH*2;
 	opt_val[(BD*4+SKI)*32+CH].L2HT = m_sat;
 	opt_val[(BD*4+SKI)*32+CH].L2H  = m_p1;
 	opt_val[(BD*4+SKI)*32+CH].HLTYPE = m_goodsat;
-
-	outtree->Fill();	
-
+	opt_val[(BD*4+SKI)*32+CH].HGLG_FitSKI = count_avg[BD][SKI];
       }
     }
   }
@@ -1359,20 +1353,10 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title,strin
 }
 
 
-void fitter::fit_LGTOT(int labelE ){
-  if(!(labelE == 10 || labelE == 30 || labelE == 50 || labelE == 80
-       || labelE == 100 || labelE == 150 || labelE == -1)) {
-    cout << "invalid energy!" << endl;
-    return;}
+void fitter::fit_LGTOT(){
 
   char title[50];
-  if(labelE == -1)
-    sprintf(title,"root_result/0916update/inj.root");
-  else if(labelE == 100){
-    sprintf(title,"TPro_ele.root",labelE);  }
-  else
-    sprintf(title,"root_result/0916update/%iGeV.root",labelE);
-  TFile f(title);
+  TFile f(fname.c_str());
 
 
   double Offset_avg[MAXBD][MAXSKI],Gain_avg[MAXBD][MAXSKI];
@@ -1390,9 +1374,9 @@ void fitter::fit_LGTOT(int labelE ){
   
   TF1 *sat_fit   = new TF1("","pol1");
 
-  root_logon();
+
   gStyle->SetOptStat(0);
-  TProfile *tpr = (TProfile *)f.Get("Board_7/LGTOT_chip2_ch44");
+  TProfile *tpr = (TProfile *)f.Get("Module78/LGTOT_chip2_ch44");
  
   TH1D *h_gain = new TH1D("","",100,0,10);
   TH1D *h1 = new TH1D("","",tpr->GetNbinsX(),0,800);
@@ -1407,6 +1391,7 @@ void fitter::fit_LGTOT(int labelE ){
 
   
   for(int BD = 0 ;BD < MAXBD ; ++BD){
+    int moduleID = mysetup->Module_List[BD];
     cout << "LGTOT BD "<< BD << endl;
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       cout << "SKI "<< SKI << endl;
@@ -1415,7 +1400,7 @@ void fitter::fit_LGTOT(int labelE ){
 	sat_fit->SetRange(MINPOINT,MAXPOINT);
         
 	int true_ch = CH*2;
-	sprintf(title,"Board_%i/LGTOT_chip%i_ch%i",BD,SKI,true_ch);
+	sprintf(title,"Module%i/LGTOT_chip%i_ch%i",moduleID,SKI,true_ch);
 	tpr = (TProfile *)f.Get(title);
 	if(tpr == NULL) continue;
 	//tpr->Draw();
@@ -1425,24 +1410,22 @@ void fitter::fit_LGTOT(int labelE ){
 	tpr->Rebin(rebinN);
 	 
 	int nentry = tpr->GetEntries();
-	if( nentry < 100 && labelE != -1 ) continue;
-	//if(labelE != -1 && BD >= ) continue;
+	//if( nentry < 100 && labelE != -1 ) continue;
+	if( nentry < 30 ) continue;
 
 	//cout << BD <<" ," << SKI << ", " << CH << endl;
 	sprintf(title,"Board%i_LGTOT_chip%i_ch%i",BD,SKI,true_ch);
 	tpr->SetName(title);
 	tpr->SetTitle(title);
  
-	//if(BD >= 5 && BD <= 15)
-	//  getchar();
-
 	int Nbin = tpr->GetNbinsX();
 	vector<double> LG,TOT;
 	LG.clear();
 	TOT.clear();
 	
 	// Fill spline(LG vs TOT) :separate injection and TB data
-
+	int labelE = 100;
+	
 	bool AllTotlessthan100 = true;
 	if(labelE == -1){
 	  double continue_check_y = -1;
@@ -1509,6 +1492,10 @@ void fitter::fit_LGTOT(int labelE ){
 	//getchar();
 	int np = LG.size();
 	if(np == 0) continue;
+
+	tpr->Draw();
+	//c1->WaitPrimitive();
+	//getchar();
 	TSpline3 *s = new TSpline3("grs",&TOT[0],&LG[0],np);
 	
 	double diff = 0.1;
@@ -1527,8 +1514,8 @@ void fitter::fit_LGTOT(int labelE ){
 	h_derivative->SetMaximum(10);
 	h_derivative->SetMinimum(0);
 	Draw_Spline_and_1stderi(*tpr,*s,*h_derivative);
-	//c1->Update();
-	//c1->WaitPrimitive();
+	c1->Update();
+	
 	
 	double localmax_x,localmax_y;
 	Find_high(h_derivative,&localmax_x,&localmax_y,s->GetXmin()+20,s->GetXmin()+300);
@@ -1554,7 +1541,7 @@ void fitter::fit_LGTOT(int labelE ){
 	  double y = tpr->GetBinContent(i);
 	  if(x == 0 || y == 0) continue;
 	  //cout << "x = "<< x << ", y = " << y << endl;
-	  double res = ( y - sat_fit->Eval(x)) / sat_fit->Eval(x);
+	  double res = ( y - sat_fit->Eval(x) ) / sat_fit->Eval(x);
 	  double error = tpr->GetBinError(i)/(x*sat_fit->Eval(x));
 	  h_res->SetBinContent(i,res);
 	  h_res->SetBinError(i,error);	 }
@@ -1591,6 +1578,7 @@ void fitter::fit_LGTOT(int labelE ){
       }
       Offset_avg[BD][SKI] /= counter;
       Gain_avg  [BD][SKI] /= counter;
+      
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	opt_val[(BD*4+SKI)*32+CH].LTTYPE = Good_fit [BD][SKI][CH];
 	if(Good_fit [BD][SKI][CH]){
@@ -1603,6 +1591,7 @@ void fitter::fit_LGTOT(int labelE ){
 	else{
 	  opt_val[(BD*4+SKI)*32+CH].T2L  = Gain_avg[BD][SKI];
 	  opt_val[(BD*4+SKI)*32+CH].TOFF = Offset_avg[BD][SKI];
+	  opt_val[(BD*4+SKI)*32+CH].LGTOT_FitSKI = counter;
 	}
       }      
     }
@@ -1665,122 +1654,42 @@ void fitter::Draw_Spline_and_1stderi(TProfile& tpr, TSpline3 &s, TH1D& h_deri){
   //getchar();
 
   //getchar();
+  c1->WaitPrimitive();
 }
 
-void fitter::fit_output(int labelE){
+void fitter::fit_output(){
 
   gROOT->SetBatch(kTRUE);
-  cout << "Starting HGLG " << labelE << " fitting... " << endl;
-  fit_spline(labelE);
+  cout << "Starting HGLG " << fname << " fitting... " << endl;
+  fit_spline();
 
-  cout << "Starting LGTOT " << labelE << " fitting... " << endl;
-  fit_LGTOT(labelE);
+  cout << "Starting LGTOT " << fname << " fitting... " << endl;
+  fit_LGTOT();
   
   ofstream calib_result;
-  if(labelE == -1)
-    calib_result.open("Chia-hung_Inj_Calib.txt");
-  else
-    calib_result.open("Chia-hung_TB_Calib.txt");
-  calib_result << "Layer  Module_ID  ASIC_ID  Channel  ADC_To_MIP  LowGain_To_HighGain_Transition  LowGain_To_HighGain_Conversion  TOT_To_LowGain_Transition  TOT_To_LowGain_Conversion  TOT_Offset  HLType LTType\n";
-  int layer_to_moduleID[28] = {  78,  90,  89,  88,  77,
-				 85,  84,  32,  69,  79,
-				 76,  83,  70,  73,  86,
-				 87,  82,  72,  67,  65,
-				 35,  36,  44,  51, 142,
-				143, 145, 144 };
+  int name_end = fname.find(".root");
+  string outname = fname.substr(0,name_end);
+  outname = string(outname + string("_fittingoutput.txt"));
+  calib_result.open(outname.c_str());
+  
+  calib_result << "Layer  Module_ID  ASIC_ID  Channel  ADC_To_MIP  LowGain_To_HighGain_Transition  LowGain_To_HighGain_Conversion  TOT_To_LowGain_Transition  TOT_To_LowGain_Conversion  TOT_Offset  HLType LTType HGLG_FitSKI LGTOTFitSKI\n";
 
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	output O = opt_val[(BD*4+SKI)*32+CH];
-	O.M_ID = layer_to_moduleID[BD];
+	O.M_ID = mysetup->Module_List[BD];
 	calib_result << O.L_ID << "\t" << O.M_ID << "\t" << O.S_ID << "\t"
 		     << O.C_ID << "\t" << O.A2M  << "\t" << O.L2HT << "\t"
 		     << O.L2H  << "\t" << O.T2LT << "\t" << O.T2L  << "\t"
-		     << O.TOFF << "\t" << O.HLTYPE << "\t" << O.LTTYPE << endl;
+		     << O.TOFF << "\t" << O.HLTYPE << "\t" << O.LTTYPE << "\t"
+		     << O.HGLG_FitSKI  << "\t" << O.LGTOT_FitSKI << endl;
       }
     }
   }
+
+  cout << "Output name will be " << outname << endl;
 }
 
-
-void fitter::root_logon(){
-
-cout << endl << "Welcome to the ATLAS rootlogon.C" << endl;
-//
-// based on a style file from BaBar
-//
-
-//..BABAR style from RooLogon.C in workdir
-TStyle *atlasStyle= new TStyle("ATLAS","Atlas style");
-
-// use plain black on white colors
- Int_t icol=0;
-atlasStyle->SetFrameBorderMode(icol);
-atlasStyle->SetCanvasBorderMode(icol);
-atlasStyle->SetPadBorderMode(icol);
-atlasStyle->SetPadColor(icol);
-atlasStyle->SetCanvasColor(icol);
-atlasStyle->SetStatColor(icol);
-//atlasStyle->SetFillColor(icol);
-
-// set the paper & margin sizes
-atlasStyle->SetPaperSize(20,26);
-atlasStyle->SetPadTopMargin(0.1);
-//atlasStyle->SetPadRightMargin(0.05);
-atlasStyle->SetPadRightMargin(0.12);
-atlasStyle->SetPadBottomMargin(0.16);
-atlasStyle->SetPadLeftMargin(0.12);
-
-// use large fonts
-//Int_t font=72;
-Int_t font=32;
-Double_t tsize=0.05;
-atlasStyle->SetTextFont(font);
-
-
-atlasStyle->SetTextSize(tsize);
-atlasStyle->SetLabelFont(font,"x");
-atlasStyle->SetTitleFont(font,"x");
-atlasStyle->SetLabelFont(font,"y");
-atlasStyle->SetTitleFont(font,"y");
-atlasStyle->SetLabelFont(font,"z");
-atlasStyle->SetTitleFont(font,"z");
-
-atlasStyle->SetLabelSize(tsize,"x");
-atlasStyle->SetTitleSize(tsize,"x");
-atlasStyle->SetLabelSize(tsize,"y");
-atlasStyle->SetTitleSize(tsize,"y");
-atlasStyle->SetLabelSize(tsize,"z");
-atlasStyle->SetTitleSize(tsize,"z");
-//atlasStyle->SetTitleOffset(1.2,"y");
-
-//use bold lines and markers
-atlasStyle->SetMarkerStyle(20);
-atlasStyle->SetMarkerSize(1.2);
-atlasStyle->SetHistLineWidth(2.);
-atlasStyle->SetLineStyleString(2,"[12 12]"); // postscript dashes
-
-//get rid of X error bars and y error bar caps
-//atlasStyle->SetErrorX(0.001);
-
-//do not display any of the standard histogram decorations
-//atlasStyle->SetOptTitle(0);
-//atlasStyle->SetOptStat(1111);
-atlasStyle->SetOptStat(0);
-//atlasStyle->SetOptFit(1111);
-atlasStyle->SetOptFit(0);
-
-// put tick marks on top and RHS of plots
-atlasStyle->SetPadTickX(1);
-atlasStyle->SetPadTickY(1);
- 
-
-gROOT->SetStyle("Plain");
-
-//gStyle->SetPadTickX(1);
-//gStyle->SetPadTickY(1);
-
-}
 
 

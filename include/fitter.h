@@ -17,35 +17,54 @@ using namespace std;
 
 class output{
 public:
-  int L_ID = -1;
-  int M_ID = -1;
-  int S_ID = -1;
-  int C_ID = -1;
-  double A2M  = -1;
-  double L2HT = -1;
-  double L2H  = -1;
-  double T2L  = -1;
-  double T2LT = -1;
-  double TOFF = -1;
-  bool   HLTYPE = false;
-  bool   LTTYPE = false;
+  output(){ Init(); };
+  void Init(){
+    L_ID = -1;
+    M_ID = -1;
+    S_ID = -1;
+    C_ID = -1;
+    A2M  = -1;
+    L2HT = -1;
+    L2H  = -1;
+    T2L  = -1;
+    T2LT = -1;
+    TOFF = -1;
+    HLTYPE = false;
+    LTTYPE = false;
+    HGLG_FitSKI  = -1;
+    LGTOT_FitSKI = -1;
+  };
+  
+  int L_ID ;
+  int M_ID ;
+  int S_ID ;
+  int C_ID ;
+  double A2M  ;
+  double L2HT ;
+  double L2H  ;
+  double T2L  ;
+  double T2LT ;
+  double TOFF ;
+  bool   HLTYPE;
+  bool   LTTYPE;
+  int    HGLG_FitSKI;
+  int    LGTOT_FitSKI;
+
 };
 
 
 class fitter{
  public:
-  fitter();
+  fitter(setup_config *SC,string filename);
  ~fitter();
   
  void fit_Graph();
  void fit(int labelE = 100);
- void fit_spline(int labelE = 100);
+ void fit_spline();
  void look_detail();
- void fit_LGTOT(int labelE = 100);
- void root_logon();
- void fit_output(int labelE = 100);
+ void fit_LGTOT();
+ void fit_output();
  void DEBUG(); 
-
 
  
  bool   status;
@@ -54,7 +73,6 @@ class fitter{
  double sat_point;
  double undershoot_percent;
 
- string fname;
  
  private:
  
@@ -84,6 +102,8 @@ class fitter{
  vector<double> HG_vec;
  vector<double> LG_vec;
  vector<double> TOT_vec;
+ setup_config *mysetup;
+ string fname;
  
 };
 

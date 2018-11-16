@@ -31,9 +31,10 @@ bool MakePlots::Init_TFile(string TPro_outputname){
     
     // Get the TProfiles
     for(int BD = 0 ; BD < MAXBOARDS ; ++BD){
+      int moduleID = mysetup->Module_List[BD];
+      if( moduleID == 0 ) { continue; }
       for(int chip = 0 ; chip < MAXSKI ; ++chip){
 	for(int ch = 0 ; ch < MAXCH ; ++ch){
-	  int moduleID = mysetup->Module_List[BD];
 	  sprintf(HGLG_name,"Module%d/HGLG_chip%d_ch%d",moduleID,chip,ch*2);
 	  sprintf(LGTOT_name,"Module%d/LGTOT_chip%d_ch%d",moduleID,chip,ch*2);
 	  HG_LG[BD][chip][ch] = (TProfile*)TPro_root->Get(HGLG_name);
@@ -57,18 +58,19 @@ bool MakePlots::Init_TFile(string TPro_outputname){
     int LGTOTBIN = 200;
   
     for(int BD = 0 ; BD < MAXBOARDS ; ++BD){
+      int moduleID = mysetup->Module_List[BD];
+      if(moduleID == 0){ continue;}
       for(int chip = 0 ; chip < MAXSKI ; ++chip){
 	for(int ch = 0 ; ch < MAXCH ; ++ch){
-	  int moduleID = mysetup->Module_List[BD];	  
 	  sprintf(p_name,"HG_LG_Module%d_chip%d_ch%d",moduleID,chip,ch*2);
 	  HG_LG[BD][chip][ch] = new TProfile(p_name,"",HGLGBIN,0,800,0,4000);
 	  sprintf(p_name,"LG_TOT_Module%d_chip%d_ch%d",moduleID,chip,ch*2);
 	  LG_TOT[BD][chip][ch] = new TProfile(p_name,"",LGTOTBIN,0,800,0,2000);
 	  HG_LG[BD][chip][ch]->SetMarkerStyle(22);
-	  HG_LG[BD][chip][ch]->SetMarkerColor(chip);
+	  HG_LG[BD][chip][ch]->SetMarkerColor(chip+1);
 	  HG_LG[BD][chip][ch]->SetMarkerSize(1);
 	  LG_TOT[BD][chip][ch]->SetMarkerStyle(21);
-	  LG_TOT[BD][chip][ch]->SetMarkerColor(chip);
+	  LG_TOT[BD][chip][ch]->SetMarkerColor(chip+1);
 	  LG_TOT[BD][chip][ch]->SetMarkerSize(1);
 	}
       }

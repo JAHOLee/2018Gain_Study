@@ -100,6 +100,7 @@ void TBReader::SetRootBranch(){
   T_Rechit->SetBranchAddress("rechit_toaRise", &rechit_toaRise);
   T_Rechit->SetBranchAddress("rechit_toaFall", &rechit_toaFall);
 
+  
   T_DWC->SetBranchAddress("ntracks", &ntracks);
   T_DWC->SetBranchAddress("trackChi2_X", &trackChi2_X);
   T_DWC->SetBranchAddress("trackChi2_Y", &trackChi2_Y);
@@ -145,7 +146,10 @@ void TBReader::Ntuple_Maker(setup_config *SC){
   TFile *outNtuple[MAXBOARDS];
   TTree *outTree[MAXBOARDS];
   TTree *outTree_history[MAXBOARDS];
-
+  for(int i = 0 ; i < MAXBOARDS ; ++i){
+    outNtuple[i] = NULL;
+    outTree  [i] = NULL;
+    outTree_history[i] = NULL; }
 
   // Variable for output trees
   // vector<unsigned int> *TB_chip;
@@ -157,6 +161,7 @@ void TBReader::Ntuple_Maker(setup_config *SC){
     
     // Check root file exist
     int moduleID = SC->Module_List[ifile];
+    if(moduleID == 0) { continue; }
     sprintf(fpath,"%s/TB/Module%d_Oct18.root",outpath.c_str(),moduleID);
     
     ifstream f_check(fpath);
@@ -190,10 +195,10 @@ void TBReader::Ntuple_Maker(setup_config *SC){
   
   for(int ev = 0 ; ev < nevents ; ++ev){
     T_Rechit->GetEntry(ev);
-    T_DWC->GetEntry(ev);
+    //T_DWC->GetEntry(ev);
     
     //Event selection
-    if(dwcReferenceType != 15) continue;
+    //if(dwcReferenceType != 15) continue;
       
     for(int ifile = 0 ; ifile < 1 ; ifile++){
       if(outTree[ifile] != NULL){	
@@ -233,10 +238,10 @@ void TBReader::TProfile_Maker(setup_config *SC,MakePlots *M){
   cout << "Looping evts" << endl;
   for(int ev = 0 ; ev < nevents ; ++ev){
     T_Rechit->GetEntry(ev);
-    T_DWC->GetEntry(ev);
+    //T_DWC->GetEntry(ev);
     
     //Event selection
-    if(dwcReferenceType != 15) continue;    
+    //if(dwcReferenceType != 15) continue;    
 
     for(int ihit = 0 ; ihit < NRechits ; ++ihit){
       

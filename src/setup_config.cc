@@ -51,7 +51,7 @@ void setup_config::Make_dir(){
   cout << "Output directories has been created ... " << endl;
 }
 
-void setup_config::Read_Module_List(string Module_Layout){  
+void setup_config::Read_Module_List(string Module_Layout , int config){  
   ifstream infile(Module_Layout.c_str());
   string line;
   int line_count = 0;
@@ -64,17 +64,18 @@ void setup_config::Read_Module_List(string Module_Layout){
   int limit = sizeof(Module_List)/sizeof(int);
   while(true){
     getline(infile,line);
-    if( infile.eof() || line_count == limit-1 ) {break;};
+    if( infile.eof() || line_count == limit) {break;};
     std::istringstream iss(line);
     for(int i = 0 ; i < members ; ++i){
       getline(iss,line_contents[i], ',' );}
-    int ModuleID = std::stoi( line_contents[0] );
+    int ModuleID = std::stoi( line_contents[(config-1)*2] );
     Module_List[line_count] = ModuleID;
     moduleID2BDorder.insert( std::pair<int,int>(ModuleID,line_count) );
     //cout << "Module "<< ModuleID << " correspond to BD " << line_count << endl;
     line_count++;
   }
   infile.close();
+  
 }
 
 bool setup_config::DirectoryExists( const char* pzPath ){

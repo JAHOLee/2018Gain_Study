@@ -5,7 +5,7 @@
 #include <map>
 #include <fstream>
 using namespace std;
-const int MAXBOARDS = 94;
+const int MAXBOARDS = 28;
 const int MAXSKI    = 4;
 const int MAXCH     = 32;
 
@@ -21,7 +21,7 @@ class setup_config{
 
   //function
   void Make_dir();  //Make output directories
-  void Read_Module_List(string Module_Layout); // Read config file (module->BD)
+  void Read_Module_List(string Module_Layout, int config); // Read config file (module->BD)
   
   
  private:

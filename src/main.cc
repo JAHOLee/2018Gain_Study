@@ -26,7 +26,7 @@ void main_fitter(string TProfile_name);
 bool main_check_fname(string fname);
 string arg_string;
 vector<string> all_args;
-bool DBG = true;
+bool DBG = false;
 
 int main(int argc, char* argv[]){
   string TProfile_name = main_default_rootname;
@@ -99,7 +99,7 @@ void main_make_TProfile(string TProfile_name){
   setup_config *SC = new setup_config;
   SC->dirpath = main_outpath;
   SC->Make_dir();
-  SC->Read_Module_List(Module_configfile); // Set ModuleID List && map
+  SC->Read_Module_List(Module_configfile,config); // Set ModuleID List && map
   
   int TB_member     = 0;
   int single_member = 0;
@@ -148,16 +148,19 @@ void main_make_TProfile(string TProfile_name){
 	S.Loop();
 	delete chain_single;
       }
-      else if(TB_ntuple && trackimpactntupler){
+      else if(TB_ntuple){
 	TB_member++;
 	if(single_member != 0 && TB_member != 0){
 	  cout << "DO NOT merge both TB and Injection runs in "
 	       << main_datainput << "!!!!\nBREAK!\n" << endl;
 	  break; }	
 	TChain *chain  = new TChain("rechitntupler/hits");
-	TChain *chain2 = new TChain("trackimpactntupler/impactPoints");
 	chain ->Add(filename.c_str());
-	chain2->Add(filename.c_str());
+	TChain *chain2 = new TChain("trackimpactntupler/impactPoints");
+	if(trackimpactntupler)
+	  chain2->Add(filename.c_str());
+	// Will simply not initialize DWC tree if it doesn't exist
+	// Since we are not doing any event selection
 	TBReader TBReader(chain,chain2,filename);
 	TBReader.dirpath = main_outpath;
 	TBReader.TProfile_Maker(SC,M);
@@ -182,6 +185,7 @@ void main_make_module_ntuple(){
   std::cout << "Under construction now QQ" << std::endl;
 }
 void main_fitter(string TProfile_name){
+  TApplication *app = new TApplication("app",0,0);
 
   cout << "Fitting file with be " << TProfile_name << endl;
   if(DBG){
@@ -190,16 +194,14 @@ void main_fitter(string TProfile_name){
   
   // Initialize output directory
   setup_config *SC  = new setup_config;
-  SC->Read_Module_List(Module_configfile); // Set ModuleID List && map
+  SC->Read_Module_List(Module_configfile,1); // Set ModuleID List && map, config == 1 for fitter
   
   MakePlots *M = new MakePlots(SC);
   bool turefile = M->Init_TFile(TProfile_name);
   if(!turefile){ return; }
 
   M->root_logon();
-  fitter f;
-  f.fname = TProfile_name;
-  
-  
-  
+  fitter f(SC,TProfile_name);  
+  f.fit_LGTOT();
+  //f.fit_output();
 };
