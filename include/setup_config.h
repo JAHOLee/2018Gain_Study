@@ -5,7 +5,7 @@
 #include <map>
 #include <fstream>
 using namespace std;
-const int MAXBOARDS = 28;
+const int MAXBOARDS = 94;
 const int MAXSKI    = 4;
 const int MAXCH     = 32;
 

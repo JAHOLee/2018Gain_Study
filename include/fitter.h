@@ -78,17 +78,17 @@ class fitter{
  
  TGraph *gr;
  TCanvas *c1;
- output opt_val[28*4*32];
+ output opt_val[MAXBOARDS*MAXSKI*MAXCH];
  void fit_Draw();
  void ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title = "LG",string Y_title = "HG");
  void Draw_Spline_and_1stderi(TProfile& tpr, TSpline3 &s, TH1D& h_deri);
 
  void Find_low(TH1D* h1,double* lowx,double* lowy);
  void Find_high(TH1D* h1,double* highx,double* highy, double lowerbound = 200,
- double upperbound = 300);
+		double upperbound = 300,bool prevent_below_zero = false);
  bool Find_sat(TProfile *tpr, TH1D* h1, double *sat,double *sat_x,double thres);
  double Calc_avg(TH1D* h1 , double min,double max);
- TH1D* qualify(double ARR[MAXBD][MAXSKI][MAXCH],int option);
+ TH1D* qualify(double ARR[MAXBOARDS][MAXSKI][MAXCH],int option);
  double spline_4nodes(double *x, double *par);
  void pol4(TProfile *tpr);
  void TSpline_2nd_deri(TH1D& h_2nd_deri,TH1D *h_deri,double* sat_x);
@@ -96,7 +96,6 @@ class fitter{
  vector<double> findzeros(TH1D* hist);
  
  
- TPad *pad1,*pad2;
 
  vector<bool>   fit_remove;
  vector<double> HG_vec;

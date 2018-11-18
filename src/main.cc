@@ -202,6 +202,6 @@ void main_fitter(string TProfile_name){
 
   M->root_logon();
   fitter f(SC,TProfile_name);  
-  f.fit_LGTOT();
-  //f.fit_output();
+  //f.fit_LGTOT();
+  f.fit_output();
 };

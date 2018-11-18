@@ -78,6 +78,8 @@ void fitter::fit(int labelE){
   int stop_and_look = -1;
   //gROOT->SetBatch(kTRUE);
 
+  TPad *pad1 = new TPad("pad1_sp","",0,0,1,1);
+
   
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     cout << "BD "<< BD << endl;
@@ -439,7 +441,7 @@ void fitter::Find_low(TH1D* h1,double* lowx,double* lowy){
   *lowx = minx;
   *lowy = miny;
 }
-void fitter::Find_high(TH1D* h1,double* highx,double* highy,double lowerbound ,double upperbound){
+void fitter::Find_high(TH1D* h1,double* highx,double* highy,double lowerbound ,double upperbound,bool prevent_below_zero){
   
   int Nbin = h1->GetNbinsX ();
   double maxx = -1,maxy = -1;
@@ -450,6 +452,7 @@ void fitter::Find_high(TH1D* h1,double* highx,double* highy,double lowerbound ,d
       maxx = x;
       maxy = y;
     }
+    if( maxy != -1 && prevent_below_zero && y < 0) { break; }
   }
   *highx = maxx;
   *highy = maxy;
@@ -1273,14 +1276,16 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title,strin
   char label_char[50];
   //Ratio plot
   c1->cd();
-  pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
-  pad1->SetBottomMargin(0.02); // Upper and lower plot are joined
-  pad1->SetGridx();         // Vertical grid
-  pad1->Draw();             // Draw the upper pad: pad1
-  pad1->cd();               // pad1 becomes the current pad
+  
+  TPad pad1("pad1", "pad1", 0, 0.3, 1, 1.0);
+  pad1.SetBottomMargin(0.02); // Upper and lower plot are joined
+  pad1.SetGridx();         // Vertical grid
+  pad1.Draw();             // Draw the upper pad: pad1
+  pad1.cd();               // pad1 becomes the current pad
   tpr->Draw();              // Draw h1
   fit->Draw("same");
-  
+
+
   // Do not draw the Y axis label on the upper plot and redraw a small
   // axis instead, in order to avoid the first label (0) to be clipped.
   //h1->GetYaxis()->SetLabelSize(0.);
@@ -1299,18 +1304,22 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title,strin
   axis->SetLabelSize(0);
   axis->Draw();
 
+
+  
   // lower plot will be in pad
   c1->cd();          // Go back to the main canvas before defining pad2
 
-  pad2 = new TPad("pad2", "pad2", 0, 0, 1, 0.3);
-  pad2->SetTopMargin(0.1);
-  pad2->SetBottomMargin(0.2);
-  pad2->SetGridx(); // vertical grid
-  pad2->Draw();
-  pad2->cd();       // pad2 becomes the current pad
+  TPad pad2("pad2", "pad2", 0, 0, 1, 0.3);
+  pad2.SetTopMargin(0.1);
+  pad2.SetBottomMargin(0.2);
+  pad2.SetGridx(); // vertical grid
+  pad2.Draw();
+  pad2.cd();       // pad2 becomes the current pad
   hratio->SetTitle("");
   //hratio->SetXTitle("DAC");
   //hratio->SetYTitle("ratio");
+
+
   
   hratio->SetMaximum(0.1);
   hratio->SetMinimum(-0.1); 
@@ -1331,8 +1340,8 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title,strin
   axis->SetLabelFont(43); // Absolute font size in pixel (precision 3)
   axis->SetLabelSize(15);
   
-  
 
+  
   hratio->GetXaxis()->SetTitleSize(0.12);
   hratio->GetXaxis()->SetTitleOffset(0.76);
   hratio->GetYaxis()->SetTitleSize(0.12);
@@ -1341,28 +1350,31 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title,strin
   
   hratio->Draw("e");
   //Add TLine to show mean value
-  TLine *Gline = new TLine(0,0,tpr->GetXaxis()->GetXmax(),0);
-  Gline->SetLineColor(1);
-  Gline->SetLineWidth(4.8);
-  Gline->SetLineStyle(7);
-  Gline->Draw();
+  TLine Gline(0,0,tpr->GetXaxis()->GetXmax(),0);
+  Gline.SetLineColor(1);
+  Gline.SetLineWidth(4.8);
+  Gline.SetLineStyle(7);
+  Gline.Draw();
   c1->cd();
   c1->Update();
-  
+
+
   //getchar();
 }
 
-
 void fitter::fit_LGTOT(){
 
-  char title[50];
-  TFile f(fname.c_str());
+  bool Injection_run = false;
+  
+  gStyle->SetOptStat(0); // Remove the stat box
+  
+  TFile f(fname.c_str()); // Input file for fitting
 
-
+  // Output variables
   double Offset_avg[MAXBD][MAXSKI],Gain_avg[MAXBD][MAXSKI];
   double Offset[MAXBD][MAXSKI][MAXCH],Gain[MAXBD][MAXSKI][MAXCH];
   bool   Good_fit[MAXBD][MAXSKI][MAXCH];
-  
+  // Initialize output variables
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       Offset_avg[BD][SKI] = 0;
@@ -1371,63 +1383,46 @@ void fitter::fit_LGTOT(){
 	Offset  [BD][SKI][CH] = -1;
 	Gain    [BD][SKI][CH] = -1;
 	Good_fit[BD][SKI][CH] = false;      }    }  }
+
   
-  TF1 *sat_fit   = new TF1("","pol1");
+  char title[100]; // Plot title
+  TF1 *sat_fit   = new TF1("","pol1"); // Fitting linear function
 
-
-  gStyle->SetOptStat(0);
+  // TProfile to fit, also create histogram for Spline purpose
   TProfile *tpr = (TProfile *)f.Get("Module78/LGTOT_chip2_ch44");
- 
-  TH1D *h_gain = new TH1D("","",100,0,10);
   TH1D *h1 = new TH1D("","",tpr->GetNbinsX(),0,800);
-  int rebinN = 1;
+  int rebinN = 1; // Rebin if the bins are too much
   h1->Rebin(rebinN);
-  //bool savepng = 0;
-  //int stop_and_look = -1;
-  //gROOT->SetBatch(kTRUE);
 
-  MINPOINT = 300;
-  MAXPOINT = 500;
-
-  
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     int moduleID = mysetup->Module_List[BD];
-    cout << "LGTOT BD "<< BD << endl;
+    cout << "LGTOT BD "<< BD << "(Module " << moduleID << ") "<< endl;
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       cout << "SKI "<< SKI << endl;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	//cout << "CH " << CH << endl;
-	sat_fit->SetRange(MINPOINT,MAXPOINT);
-        
+
+	// Get TProfile
 	int true_ch = CH*2;
 	sprintf(title,"Module%i/LGTOT_chip%i_ch%i",moduleID,SKI,true_ch);
 	tpr = (TProfile *)f.Get(title);
-	if(tpr == NULL) continue;
-	//tpr->Draw();
-	if( BD == 16 && SKI == 2 && CH == 27 ){ continue; }
-	if( BD == 23 && SKI == 0 && CH == 23 ){ continue; }
-
+	if(tpr == NULL) continue; // Prevention
+	
 	tpr->Rebin(rebinN);
-	 
+	// Pre-selection for fitting
 	int nentry = tpr->GetEntries();
-	//if( nentry < 100 && labelE != -1 ) continue;
-	if( nentry < 30 ) continue;
+	if( nentry < 100 ) continue;
 
-	//cout << BD <<" ," << SKI << ", " << CH << endl;
-	sprintf(title,"Board%i_LGTOT_chip%i_ch%i",BD,SKI,true_ch);
-	tpr->SetName(title);
-	tpr->SetTitle(title);
- 
 	int Nbin = tpr->GetNbinsX();
 	vector<double> LG,TOT;
 	LG.clear();
 	TOT.clear();
+
+	int spline_points = 10;
 	
-	// Fill spline(LG vs TOT) :separate injection and TB data
-	int labelE = 100;
-	
-	bool AllTotlessthan100 = true;
-	if(labelE == -1){
+	bool AllTotlessthan100 = true;  //Pre-selection
+	//Seperate injection case and TB Run
+	if(Injection_run){
 	  double continue_check_y = -1;
 	  bool first_non_zero = false;
 	  int point_counter = 0;
@@ -1456,11 +1451,14 @@ void fitter::fit_LGTOT(){
 		TOT.push_back(x);
 		LG.push_back(y); }
 	    }
+	    if(AllTotlessthan100) continue;
 	  }
 	}
 	
 	else{
+	  //cout << "fitting preparation ..." << endl;
 	  vector<int> ithbin;
+	  ithbin.clear();
 	  for(int i = 1 ; i < Nbin ; ++i){
 	    double x = tpr->GetBinCenter(i);
 	    double y = tpr->GetBinContent(i);
@@ -1468,42 +1466,45 @@ void fitter::fit_LGTOT(){
 	      AllTotlessthan100 = false;
 	      ithbin.push_back(i);}
 	  }
-	  int spline_points = 10;
-	  float factor = (float)ithbin.size()/spline_points;
-	  for(int i = 0 ; i < spline_points ; ++i){
-	    double x = tpr->GetBinCenter(ithbin[(int)i*factor]);
-	    double y = tpr->GetBinContent(ithbin[(int)i*factor]);
-	    TOT.push_back(x);
-	    LG.push_back(y);
+	  if(AllTotlessthan100) continue;
+	  float TOTminx   = tpr->GetBinCenter(ithbin[0]);
+	  float TOTmaxx   = tpr->GetBinCenter(ithbin[ithbin.size()-1]);	  
+	  float TOTRange  = TOTmaxx - TOTminx;
+	  float tolerance = tpr->GetBinCenter(2) - tpr->GetBinCenter(1);
+	  float spacing   = TOTRange/spline_points;
+	  float goodx     = TOTminx;
+	  
+	  for(int i = 1 ; i < (int)ithbin.size()-1 ; ++i){
+	    double x = tpr->GetBinCenter(ithbin[i]);
+	    double y = tpr->GetBinContent(ithbin[i]);
+	    double y_previous = tpr->GetBinContent(ithbin[i-1]);
+	    double y_latter   = tpr->GetBinContent(ithbin[i+1]);
+	    if(abs(x - goodx) < tolerance*5){
+	      //Prevent spike
+	      if( y > y_previous && y > y_latter ){ continue;}
+	      if( y < y_previous && y < y_latter ){ continue;}
+	      TOT.push_back(x);
+	      LG.push_back(y);
+	      goodx += spacing;}
 	    //cout << x << ", " << y << endl;
 	  }
-	}
-	if(AllTotlessthan100) continue;	
-	tpr->Draw();
-	c1->Update();
-	//getchar();
-	for(int i = 1 ; i < (int)LG.size()-1 ; ++i){
-	  if(TOT[i-1] > TOT[i] && TOT[i+1] > TOT[i]){
-	    LG.erase(LG.begin() + i);
-	    TOT.erase(TOT.begin() + i);
-	  }
-	}
-	//cout << LG.size() << endl;
-	//getchar();
-	int np = LG.size();
-	if(np == 0) continue;
+	  if( (int)LG.size() == 0 ){ continue; }
 
-	tpr->Draw();
-	//c1->WaitPrimitive();
-	//getchar();
-	TSpline3 *s = new TSpline3("grs",&TOT[0],&LG[0],np);
+	  if( TOTmaxx != TOT[TOT.size()-1]){
+	    TOT.push_back(TOTmaxx);
+	    LG.push_back(tpr->GetBinContent(ithbin[ithbin.size()-1]));}
+	}
+
+        
+	// Create spline
+	TSpline3 *s = new TSpline3("grs",&TOT[0],&LG[0],LG.size());
 	
 	double diff = 0.1;
 	double h_start = 0;
 	double h_end   = 800;
 
+	// Create spline derivative
 	TH1D *h_derivative = new TH1D("","",(h_end - h_start)/diff,h_start,h_end);
-	
 	double xx = h_start;
 	for(int i = 0 ; i < h_derivative->GetNbinsX() ; ++i){
 	  double x = h_derivative->GetBinCenter(i);
@@ -1516,25 +1517,33 @@ void fitter::fit_LGTOT(){
 	Draw_Spline_and_1stderi(*tpr,*s,*h_derivative);
 	c1->Update();
 	
-	
+	//Find local maximum of 1st derivative, take it as center of good fit
 	double localmax_x,localmax_y;
-	Find_high(h_derivative,&localmax_x,&localmax_y,s->GetXmin()+20,s->GetXmin()+300);
-
-	
+	bool prevent_below_zero = true;
+	Find_high(h_derivative,&localmax_x,&localmax_y,s->GetXmin()+20,s->GetXmax()-20,prevent_below_zero);
+	        
 	//Prevention if fail
 	if(localmax_x < 10) continue;
-	
-	sat_fit->SetRange(localmax_x*0.95,localmax_x*1.05);
-	tpr->Fit(sat_fit,"QEMR0");
-	//cout << 	localmax_x << endl;
-	int fit_pt = sat_fit->GetNumberFitPoints();
-	//cout << fit_pt << endl;
-	if(fit_pt < 5)
-	  continue;
-	
-	double tmp_gain = sat_fit->GetParameter(1);
-	h_gain->Fill(tmp_gain);
 
+	double fit_range_low  = localmax_x*0.9;
+	double fit_range_high = localmax_x*1.1;
+	
+	sat_fit->SetRange(fit_range_low,fit_range_high);
+	// check fitting members
+	int fit_member = 0;
+	for(int i = 1 ; i < Nbin ; ++i){
+	  double x = tpr->GetBinCenter(i);
+	  double y = tpr->GetBinContent(i);
+	  if(x < fit_range_high && x > fit_range_low && y != 0){
+	    fit_member++;
+	  }
+	}
+	//TODO : Figure out what to do id fit_member is too low
+	tpr->Fit(sat_fit,"QEMR0");
+
+	double tmp_gain = sat_fit->GetParameter(1);
+	
+	//Create residual plot to Draw
 	TH1D *h_res = new TH1D("","",tpr->GetNbinsX(),0,800);
 	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
 	  double x = tpr->GetBinCenter(i);
@@ -1546,6 +1555,7 @@ void fitter::fit_LGTOT(){
 	  h_res->SetBinContent(i,res);
 	  h_res->SetBinError(i,error);	 }
 
+
 	ratio_plot(tpr,sat_fit,h_res,"TOT","LG");
 	
 	//c1->WaitPrimitive();
@@ -1556,17 +1566,21 @@ void fitter::fit_LGTOT(){
 	Offset  [BD][SKI][CH] = localmax_x - sat_fit->Eval(localmax_x)/tmp_gain;
 	Gain    [BD][SKI][CH] = tmp_gain;
 
+
 	delete s; delete h_derivative; delete h_res;
+
 	
 	
       }
     }
   }
-
+  
+  //Filling output class
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       int counter = 0;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
+	//Result Selection
 	if(Offset  [BD][SKI][CH] < 100 || Offset  [BD][SKI][CH] > 600)
 	  continue;
 	if(Gain  [BD][SKI][CH] < 3 || Gain  [BD][SKI][CH] > 7)
@@ -1597,9 +1611,7 @@ void fitter::fit_LGTOT(){
     }
   }
   
-  //h_gain->Draw();
-  //c1->WaitPrimitive();
-    
+  // Create ROOT output
   // sprintf(title,"Spline_%iGeV.root",labelE);
   // TFile outf(title,"recreate");
   // TTree *outtree = new TTree("tree","tree");
@@ -1616,8 +1628,10 @@ void fitter::fit_LGTOT(){
   // outtree->Branch("good_saturation",&m_goodsat,"good_saturation/O");
   // outtree->Branch("tpr_entry",&m_tpr_entry,"tpr_entry/D");
  
-  delete sat_fit; delete h_gain; delete h1;  
+  delete sat_fit; delete h1;  
   f.Close();  
+
+
 }
 
 void fitter::Draw_Spline_and_1stderi(TProfile& tpr, TSpline3 &s, TH1D& h_deri){
@@ -1654,7 +1668,7 @@ void fitter::Draw_Spline_and_1stderi(TProfile& tpr, TSpline3 &s, TH1D& h_deri){
   //getchar();
 
   //getchar();
-  c1->WaitPrimitive();
+  //c1->WaitPrimitive();
 }
 
 void fitter::fit_output(){
