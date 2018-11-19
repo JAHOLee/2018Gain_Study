@@ -279,7 +279,10 @@ void TBReader::TProfile_Maker(setup_config *SC,MakePlots *M){
       ch   = (int)rechit_channel->at(ihit);
       ch   /= 2;
       moduleID = rechit_module->at(ihit);
-      BD_order = SC->moduleID2BDorder.find(moduleID)->second;
+      if ( SC->moduleID2BDorder.find(moduleID) == SC->moduleID2BDorder.end() ){
+	continue; } // Not finding any moduleID in the mapping -> continue
+      else{
+	BD_order = SC->moduleID2BDorder.find(moduleID)->second;}
       if( LG < 5 ) continue;
       M->HG_LG[BD_order][chip][ch]->Fill(LG,HG,1);
       if( TOT < 5 ) continue;

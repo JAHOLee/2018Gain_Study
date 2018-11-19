@@ -195,7 +195,7 @@ void main_fitter(string TProfile_name){
   
   // Initialize output directory
   setup_config *SC  = new setup_config;
-  SC->Read_Module_List(Module_configfile,1); // Set ModuleID List && map, config == 1 for fitter
+  SC->Read_Module_List(Module_configfile,main_config); // Set ModuleID List && map, config == 1 for fitter
   
   MakePlots *M = new MakePlots(SC);
   bool turefile = M->Init_TFile(TProfile_name);
