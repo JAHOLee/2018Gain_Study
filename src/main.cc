@@ -11,7 +11,7 @@ string main_outpath = "./";
 string main_default_rootname = "TPro.root";
 string main_datainput = "./data_input.txt"; 
 string Module_configfile = "./configs/all_config.csv";
-int config = 1; // Run 179 ~ 722(config1), Run 751 ~ 1064(config2),
+int main_config = 1; // Run 179 ~ 722(config1), Run 751 ~ 1064(config2),
                 // Run 1079~1167(config3)
 // Using the first configuration so all boards are included
 // 6-Nov-2018 copy from
@@ -99,7 +99,7 @@ void main_make_TProfile(string TProfile_name){
   setup_config *SC = new setup_config;
   SC->dirpath = main_outpath;
   SC->Make_dir();
-  SC->Read_Module_List(Module_configfile,config); // Set ModuleID List && map
+  SC->Read_Module_List(Module_configfile,main_config); // Set ModuleID List && map
   
   int TB_member     = 0;
   int single_member = 0;
@@ -159,9 +159,10 @@ void main_make_TProfile(string TProfile_name){
 	TChain *chain2 = new TChain("trackimpactntupler/impactPoints");
 	if(trackimpactntupler)
 	  chain2->Add(filename.c_str());
-	// Will simply not initialize DWC tree if it doesn't exist
+	// ^^^^^^^^ Will simply not initialize DWC tree if it doesn't exist
 	// Since we are not doing any event selection
 	TBReader TBReader(chain,chain2,filename);
+	if(!TBReader.Check_Config(main_config)){ continue ;}
 	TBReader.dirpath = main_outpath;
 	TBReader.TProfile_Maker(SC,M);
 	if(TB_member %5 == 0){

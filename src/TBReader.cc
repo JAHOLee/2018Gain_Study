@@ -16,6 +16,7 @@ TBReader::TBReader(){
 TBReader::TBReader( TChain *c1, TChain *c2, string filename):T_Rechit(c1),T_DWC(c2){
   cout << "Constructor of TBReader, Test Beam Run ... \n\n" << endl;
   fname = filename;
+  Init();
 }
 
 TBReader::~TBReader(){
@@ -133,6 +134,31 @@ void TBReader::Init_Beaminfo(){
        << " events." << endl;
 }
 
+bool TBReader::Check_Config(int given_config){
+  int setup_config;
+  if(RunN <= 722 ) {
+    setup_config = 1;
+    if(RunN <= 257){
+      cout << "TOA threshold will be changed after Run 257." << endl;}
+  }
+  else if(RunN > 722 && RunN <= 1057){
+    setup_config = 2;}
+  else if(RunN > 1057 && RunN <= 1078){
+    setup_config = 5;
+    return false; //Not going to handle muon run
+  }
+  else{
+    setup_config = 3;
+  }
+
+  if(setup_config == given_config){ return true; }
+  else{
+    cout << "conflict config with main function, please modify the main config."
+	 << endl;
+    return false;}
+  
+}
+
 void TBReader::Init(){
   Init_Pointers();
   SetRootBranch();
@@ -140,7 +166,6 @@ void TBReader::Init(){
 }
 
 void TBReader::Ntuple_Maker(setup_config *SC){
-  Init();
   
   string outpath = string( dirpath + string("Module_Ntuple") );
   TFile *outNtuple[MAXBOARDS];

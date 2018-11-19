@@ -1143,7 +1143,7 @@ vector<double> fitter::findzeros(TH1D* hist){
   int Nbin = hist->GetNbinsX();
  
   bool first_flag = false;
-  double lastx;
+  double lastx = -100;
   int cut = 0;
   for(int i = 0 ; i < Nbin ; ++i){
     double x = hist->GetBinCenter(i);

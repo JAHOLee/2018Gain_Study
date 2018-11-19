@@ -31,12 +31,14 @@ class TBReader{
   string beam_str; // "Ele","Pi","Mu"
   string fname;
   string dirpath;
+  int    given_config;
   TCanvas *c1;
 
   // Working functions called by main.cc
   void Ntuple_Maker(setup_config *SC);
   void TProfile_Maker(setup_config *SC, MakePlots *M);
-
+  bool Check_Config(int given_config);  // Check if config conflict with main
+  
  private:
   
   //member  
