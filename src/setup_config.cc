@@ -68,6 +68,8 @@ void setup_config::Read_Module_List(string Module_Layout , int config){
     std::istringstream iss(line);
     for(int i = 0 ; i < members ; ++i){
       getline(iss,line_contents[i], ',' );}
+    // Prevent blank string
+    if(line_contents[(config-1)*2] == ""){ continue; }
     int ModuleID = std::stoi( line_contents[(config-1)*2] );
     Module_List[line_count] = ModuleID;
     moduleID2BDorder.insert( std::pair<int,int>(ModuleID,line_count) );

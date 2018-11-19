@@ -47,10 +47,10 @@ class TBReader{
   int nevents;
   
   // Mainframe functions
-  void Init(); // Run all initial stuff 
+  void Init(bool quite = false); // Run all initial stuff 
   void Init_Pointers(); // give all pointer = 0 value
   void SetRootBranch(); // Set input root branch
-  void Init_Beaminfo(); // Read Run information from root
+  void Init_Beaminfo(bool quite = false); // Read Run information from root
   bool Check_run_filled(TTree* tree); // Check if a run was already filled by
                                       // look into the Run_history tree
   

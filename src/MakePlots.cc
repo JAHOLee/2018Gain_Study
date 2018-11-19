@@ -112,6 +112,7 @@ void MakePlots::Write_TProfile(){
   
   for(int BD = 0 ; BD < MAXBOARDS ; BD++){
     sprintf(title,"Module%i",mysetup->Module_List[BD]);
+    if(mysetup->Module_List[BD] == 0){ continue; } //If module doesn't exist
     if(!file_exist){
       dir = new TDirectory();
       dir = TPro_root->mkdir(title); }

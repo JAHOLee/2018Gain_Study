@@ -16,7 +16,6 @@ TBReader::TBReader(){
 TBReader::TBReader( TChain *c1, TChain *c2, string filename):T_Rechit(c1),T_DWC(c2){
   cout << "Constructor of TBReader, Test Beam Run ... \n\n" << endl;
   fname = filename;
-  Init();
 }
 
 TBReader::~TBReader(){
@@ -113,7 +112,7 @@ void TBReader::SetRootBranch(){
 
 }
 
-void TBReader::Init_Beaminfo(){
+void TBReader::Init_Beaminfo(bool quite){
   T_Rechit->GetEntry(0);
   beamE = beamEnergy;
   if( pdgID == 11 ){
@@ -130,11 +129,13 @@ void TBReader::Init_Beaminfo(){
     beam_str = "??";
     PID = -1;}
   RunN = run;
-  cout << beam_str.c_str() << " Run, "<< beamE << "GeV , with " << nevents
-       << " events." << endl;
+  if(!quite){
+    cout << beam_str.c_str() << " Run, "<< beamE << "GeV , with " << nevents
+	 << " events." << endl;}
 }
 
 bool TBReader::Check_Config(int given_config){
+  Init(true);
   int setup_config;
   if(RunN <= 722 ) {
     setup_config = 1;
@@ -159,10 +160,10 @@ bool TBReader::Check_Config(int given_config){
   
 }
 
-void TBReader::Init(){
+void TBReader::Init(bool quite){
   Init_Pointers();
   SetRootBranch();
-  Init_Beaminfo();
+  Init_Beaminfo(quite);
 }
 
 void TBReader::Ntuple_Maker(setup_config *SC){
