@@ -11,7 +11,7 @@
 #include "TF1.h"
 #include <vector>
 
-const int MAXBD  = 28;
+const int MAXBD  = 94;
 
 using namespace std;
 
