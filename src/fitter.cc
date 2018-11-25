@@ -983,9 +983,15 @@ void fitter::fit_spline(){
 	  m_p1  = p1_ARR[BD][SKI][CH];
 	  m_sat = sat_ARR[BD][SKI][CH];}
 	else{
-	  m_p0  = p0_avg[BD][SKI];
-	  m_p1  = p1_avg[BD][SKI];
-	  m_sat = sat_avg[BD][SKI];}
+	  if(count_avg[BD][SKI] == 0){
+	    m_p0  = -1;
+	    m_p1  = -1;
+	    m_sat = -1;
+	  }
+	  else{
+	    m_p0  = p0_avg[BD][SKI];
+	    m_p1  = p1_avg[BD][SKI];
+	    m_sat = sat_avg[BD][SKI];}}
 	m_tpr_entry = tpr_entry[BD][SKI][CH];
 	m_goodsat = sat_good[BD][SKI][CH];
 
