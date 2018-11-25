@@ -6,12 +6,6 @@
 #include <iomanip>
 #include "TFile.h"
 #include "TTree.h"
-#include "TChain.h"
-#include <utility>
-
-TBReader::TBReader(){
-  cout << "Constructor of TBReader, blank constructor... " << endl;
-}
 
 TBReader::TBReader( TChain *c1, TChain *c2, string filename):T_Rechit(c1),T_DWC(c2){
   cout << "Constructor of TBReader, Test Beam Run ... \n\n" << endl;
@@ -65,7 +59,7 @@ void TBReader::SetRootBranch(){
   T_Rechit->SetBranchAddress("pdgID", &pdgID);
   T_Rechit->SetBranchAddress("beamEnergy", &beamEnergy);
   T_Rechit->SetBranchAddress("trueBeamEnergy", &trueBeamEnergy);
-  T_Rechit->SetBranchAddress("NRechits", &NRechits);
+  //T_Rechit->SetBranchAddress("NRechits", &NRechits);
   T_Rechit->SetBranchAddress("rechit_detid", &rechit_detid);
   T_Rechit->SetBranchAddress("rechit_module", &rechit_module);
   T_Rechit->SetBranchAddress("rechit_layer", &rechit_layer);
@@ -269,7 +263,7 @@ void TBReader::TProfile_Maker(setup_config *SC,MakePlots *M){
     //Event selection
     //if(dwcReferenceType != 15) continue;    
 
-    for(int ihit = 0 ; ihit < NRechits ; ++ihit){
+    for(int ihit = 0 ; ihit < rechit_amplitudeHigh->size() ; ++ihit){
       
       double HG,LG,TOT;
       int chip,ch,BD_order,moduleID;

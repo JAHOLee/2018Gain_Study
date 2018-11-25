@@ -165,7 +165,7 @@ void main_make_TProfile(string TProfile_name){
 	if(!TBReader.Check_Config(main_config)){ continue ;}
 	TBReader.dirpath = main_outpath;
 	TBReader.TProfile_Maker(SC,M);
-	if(TB_member %5 == 0){
+	if(TB_member %20 == 0){
 	  M-> Write_TProfile();}
 	delete chain;
 	delete chain2;

@@ -17,21 +17,22 @@ void Compare(){
   double dummy_ind[MAXCHIP*MAXCH];
   for(int i = 0 ; i < MAXCHIP*MAXCH; ++i)
     dummy_ind[i] = i;
-  Read_Module_List(Module_Layout,config);
+  //  Read_Module_List(Module_Layout,config);
   
   char fileN[50],title[100];
-  sprintf(fileN,"Chia-hung_TB_Calib.txt");
+  sprintf(fileN,"./Chia-hung_TB_Calib.txt");
   TTree *tree = new TTree() ;
-  tree->ReadFile(fileN,"L_ID/I:M_ID/I:S_ID/I:C_ID/I:A2M/D:L2HT/D:L2H/D:T2LT/D:T2L/D:TOFF/I:HLTYPE/O:LTTYPE/O");
+  tree->ReadFile(fileN,"L_ID/I:M_ID/I:S_ID/I:C_ID/I:A2M/D:L2HT/D:L2H/D:T2LT/D:T2L/D:TOFF/D:HLTYPE/O:LTTYPE/O");
   
   int points = tree->GetEntries();
 
   int June_config[] = { 78, 90, 89, 88, 77, 85, 84, 32, 69, 79,
 			67, 65, 76, 83, 35, 36, 70, 73, 44, 51,
 			86, 87, 54, 62, 64, 55, 59, 71 };
+  cout << "hu" << endl;
   //Fill result based on Oct config1 layerID
   for(int i = 0 ; i < points ; ++i){
-    tree->GetEntry(i) ;    
+    tree->GetEntry(i) ;
     int M_ID = tree->GetLeaf("M_ID")->GetValue(0);
     int L_ID = moduleID2BDorder.find(M_ID)->second;
     if(L_ID == 0 && M_ID != 78){ continue; }
@@ -60,7 +61,7 @@ void Compare(){
       sprintf(fileN,"TPro_config1_v4_fittingoutput.txt");
 
     TTree *tree = new TTree() ;
-    tree->ReadFile(fileN,"L_ID/I:M_ID/I:S_ID/I:C_ID/I:A2M/D:L2HT/D:L2H/D:T2LT/D:T2L/D:TOFF/I:HLTYPE/O:LTTYPE/O:HGLGF/I:LGTOT/I");
+    tree->ReadFile(fileN,"L_ID/I:M_ID/I:S_ID/I:C_ID/I:A2M/D:L2HT/D:L2H/D:T2LT/D:T2L/D:TOFF/D:HLTYPE/O:LTTYPE/O:HGLGF/I:LGTOT/I");
     points = tree->GetEntries();
     for(int i = 0 ; i < points ; ++i){
       tree->GetEntry(i) ;
@@ -211,6 +212,7 @@ void Read_Module_List(string Module_Layout , int config){
     std::istringstream iss(line);
     for(int i = 0 ; i < members ; ++i){
       getline(iss,line_contents[i], ',' );}
+    if(line_contents[(config-1)*2] == ""){ continue; } 
     int ModuleID = std::stoi( line_contents[(config-1)*2] );
     Module_List[line_count] = ModuleID;
     moduleID2BDorder.insert( std::pair<int,int>(ModuleID,line_count) );

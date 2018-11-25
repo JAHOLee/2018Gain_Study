@@ -745,7 +745,7 @@ void fitter::fit_spline(){
   //Loop over all channels (Get TProfile)
   for(int BD = 0 ;BD < MAXBOARDS ; ++BD){
     int moduleID = mysetup->Module_List[BD];
-    cout << "HGLG BD "<< BD << endl;
+    cout << "HGLG BD "<< BD << "( Module " << moduleID << " )"<< endl;
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       cout << "SKI "<< SKI << endl;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
