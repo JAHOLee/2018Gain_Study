@@ -7,14 +7,14 @@
 
 int main(){
   TApplication *app = new TApplication("app",0,0);
-  fitter fit;
+  //  fitter fit;
   //fit.fit_LGTOT(-1);
   //fit.fit_output(-1);
   //fit.fit_output(100);
-  fit.fit_spline(-1);
-  fit.fit_LGTOT(-1);
-  fit.fit_LGTOT(100);
-  fit.fit_spline(100);
+  // fit.fit_spline(-1);
+  // fit.fit_LGTOT(-1);
+  // fit.fit_LGTOT(100);
+  // fit.fit_spline(100);
 
   // fit.DEBUG();
   // cout <<"2" << endl;
@@ -28,7 +28,7 @@ int main(){
   //compare com;
   // com.compare_Ene();
   //com.compare_method();
-  return 0;
+  //return 0;
   
   TChain *chain  = new TChain("rechitntupler/hits");
   TChain *chain2 = new TChain("trackimpactntupler/impactPoints");
