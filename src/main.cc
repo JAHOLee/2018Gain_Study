@@ -123,7 +123,11 @@ void main_make_TProfile(string TProfile_name){
     
     infile >> filename;
     if(infile.eof()) {
-      M-> Write_TProfile();
+      if(single_member > 1){
+	M-> Write_TProfile();
+      }
+      else if(TB_member > 1){
+	M-> Write_TProfile();}
       break;}
     if( filename.length() > 2){
       cout << "input file: " << filename << endl;
@@ -142,6 +146,7 @@ void main_make_TProfile(string TProfile_name){
 	  cout << "DO NOT merge both TB and Injection runs in "
 	       << main_datainput << "!!!!\nBREAK!\n" << endl;
 	  break; }
+	if( single_member % 100 == 0){ M-> Write_TProfile(); }
 	TChain *chain_single  = new TChain("pulseshapeplotter/tree");
         chain_single->Add(filename.c_str());
 	single_module S(chain_single,filename);

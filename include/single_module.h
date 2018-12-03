@@ -1,9 +1,3 @@
-/////////////////////////////////////////////////////////
-// Arthor: Chia-hung Chien  chchien521@gmail.com       
-// Just use the same class name as we used to.
-// Date : 20-June-2018
-/////////////////////////////////////////////////////////
-
 #ifndef single_module_h
 #define single_module_h
 
@@ -30,7 +24,7 @@ class single_module{
   string dirpath;
   string inj_CH_str;
   bool   inj_sweep;
-  int    inj_CH;
+  vector<int> inj_CH;
   int    inj_event;
   
  private:

@@ -28,6 +28,14 @@ bool MakePlots::Init_TFile(string TPro_outputname){
       cout << "Please choose another root file or create one.\n\n" << endl;
       return false;}
     TPro_history -> SetBranchAddress("history_Run",&history_Run);
+
+    TPro_fname = (TTree*)TPro_root->Get("Filename");
+    if(TPro_fname == NULL){ 
+      cout << "\nInput file has no object named " << "Filename! " << endl;
+      cout << "Please choose another root file or create one.\n\n" << endl;
+      return false;}
+    TPro_fname -> SetBranchAddress("Filename_Inj",&m_filename);
+
     
     // Get the TProfiles
     for(int BD = 0 ; BD < MAXBOARDS ; ++BD){
@@ -53,6 +61,9 @@ bool MakePlots::Init_TFile(string TPro_outputname){
     TPro_root = new TFile(TPro_outputname.c_str(),"recreate");
     TPro_history = new TTree("history","history");
     TPro_history-> Branch("history_Run",&history_Run);
+    TPro_fname   = new TTree("Filename","Filename");
+    TPro_history-> Branch("Filename_Inj",&m_filename);
+
     
     int HGLGBIN  = 400;
     int LGTOTBIN = 200;
@@ -69,9 +80,14 @@ bool MakePlots::Init_TFile(string TPro_outputname){
 	  HG_LG[BD][chip][ch]->SetMarkerStyle(22);
 	  HG_LG[BD][chip][ch]->SetMarkerColor(chip+1);
 	  HG_LG[BD][chip][ch]->SetMarkerSize(1);
+	  HG_LG[BD][chip][ch]->SetYTitle("HG(ADC Counts)");
+	  HG_LG[BD][chip][ch]->SetXTitle("LG(ADC Counts)");
+	  
 	  LG_TOT[BD][chip][ch]->SetMarkerStyle(21);
 	  LG_TOT[BD][chip][ch]->SetMarkerColor(chip+1);
 	  LG_TOT[BD][chip][ch]->SetMarkerSize(1);
+	  LG_TOT[BD][chip][ch]->SetXTitle("TOT(ADC Counts)");
+	  LG_TOT[BD][chip][ch]->SetYTitle("LG(ADC Counts)");
 	}
       }
     }
@@ -90,9 +106,9 @@ void MakePlots::Init_Pointers(){
 }
 
 bool MakePlots::Check_Run(int RunN){
-  
-  int history_run = TPro_history->GetEntries();
+
   bool doublefill = false;
+  int history_run = TPro_history->GetEntries(); 
   for(int i = 0 ; i < history_run ; ++i){
     TPro_history->GetEntry(i);
     if(history_Run == RunN){ doublefill = true; }
@@ -100,6 +116,21 @@ bool MakePlots::Check_Run(int RunN){
   if(!doublefill){
     history_Run = RunN;
     TPro_history->Fill();}
+  
+  return doublefill;
+}
+bool MakePlots::Check_Name(string fname){
+
+  bool doublefill = false;
+  
+  int history_runs = TPro_fname->GetEntries(); 
+  for(int i = 0 ; i < history_runs ; ++i){
+    TPro_fname->GetEntry(i);
+    if(fname == m_filename){ doublefill = true; }
+  }
+  if(!doublefill){
+    m_filename = fname;
+    TPro_fname->Fill();}
   
   return doublefill;
 }

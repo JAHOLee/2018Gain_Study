@@ -1,10 +1,3 @@
-/////////////////////////////////////////////////////////
-// Arthor: Chia-hung Chien  chchien521@gmail.com       
-// Just use the same class name as we used to.
-// Date : 5-Nov-2018
-/////////////////////////////////////////////////////////
-
-
 #ifndef TBReader_h
 #define TBReader_h
 

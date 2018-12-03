@@ -22,7 +22,7 @@ class setup_config{
   //function
   void Make_dir();  //Make output directories
   void Read_Module_List(string Module_Layout, int config); // Read config file (module->BD)
-  
+  void Read_Module_Play(string Module_Layout);
   
  private:
   

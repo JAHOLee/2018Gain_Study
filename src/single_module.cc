@@ -15,7 +15,7 @@
 #include "TH2.h"
 #include <utility>
 #include "TProfile.h"
-
+#include <sstream>
 
 single_module::single_module( TChain *chain, string filename ):T_Rawhit(chain)
 {
@@ -94,7 +94,6 @@ void single_module::Loop(){
     cout << "single_module::Loop only deal with sweep injection run!" << endl;
     return;}
   
-  Root_logon();
   Init();
   //gROOT->SetBatch(kTRUE);
   nevents = T_Rawhit->GetEntries();
@@ -128,99 +127,6 @@ void single_module::Fill_Tprofile(){
   if(BD_layer == -1){
     cout << moduleID_str << " not used in June TB!" << endl;
     return;  }
-
-  TDirectory *dir;
-  sprintf(title,"Board_%i",BD_layer);
- 
-  if(!root_out->GetListOfKeys()->Contains(title)){
-    dir = root_out->mkdir(title,moduleID_str.c_str());}
-  else{
-    dir = (TDirectory*)root_out->Get(title);  }
-  dir->cd();
-  
-  TProfile *tpr_HGLG[MAXCHIP];
-  TProfile *tpr_LGTOT[MAXCHIP];
-  TProfile *tpr_LGinj[MAXCHIP];
-  TProfile *tpr_TOTinj[MAXCHIP];
-
-  
-  for(int chip = 0 ; chip < MAXCHIP ; ++chip){
-    sprintf(title,"HGLG_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
-    tpr_HGLG[chip] = new TProfile(title,title,400,0,800,0,4000);
-    sprintf(title,"LGTOT_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
-    tpr_LGTOT[chip] = new TProfile(title,title,300,0,800,0,3000);
-    
-    sprintf(title,"LGinj_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
-    tpr_LGinj[chip] = new TProfile(title,title,400,0,4000,0,3000);
-    sprintf(title,"TOTinj_BD%i_chip%i_ch%i",BD_layer,chip,inj_CH);
-    tpr_TOTinj[chip] = new TProfile(title,title,400,0,4000,0,3000);
-    
-  }
-
-  for(int ev = 0 ; ev < nevents ; ++ev){
-    T_Rawhit->GetEntry(ev);
-    for(int hit = 0 ; hit < (int) HighGainADC->size() ; ++hit){
-      if(channelID->at(hit) != inj_CH) continue;
-      double HG,LG,TOT;
-      int chip,inj_daq;
-      HG   = HighGainADC->at(hit);
-      LG   = LowGainADC->at(hit);
-      TOT  = TotSlow->at(hit);
-      chip = skirocID->at(hit);
-      inj_daq = (int) 4096./nevents * ev;
-      if( LG < 5 ) continue;
-      tpr_HGLG[chip]->Fill(LG,HG,1);
-      tpr_LGTOT[chip]->Fill(TOT,LG,1);
-      tpr_LGinj[chip]->Fill(inj_daq,LG,1);
-      tpr_TOTinj[chip]->Fill(inj_daq,TOT,1);
-    }
-  }
-  
-  for(int chip = 0 ; chip < MAXCHIP ; ++chip){
-
-    if(tpr_HGLG[ chip ]->GetEntries() == 0){
-      continue;}	
-    sprintf(title,"HGLG_chip%i_ch%i",chip,inj_CH);
-    tpr_HGLG[ chip ]->SetTitle(title);
-    tpr_HGLG[ chip ]->SetName(title);
-    tpr_HGLG[ chip ]->SetMarkerStyle(20);
-    tpr_HGLG[ chip ]->SetMarkerSize(1.2);
-    tpr_HGLG[ chip ]->SetMarkerColor(chip+1);
-    tpr_HGLG[ chip ]->Write(title,TObject::kOverwrite);
-  
-    if(tpr_LGTOT[ chip ]->GetEntries() == 0){
-      continue;}
-    sprintf(title,"LGTOT_chip%i_ch%i",chip,inj_CH);
-    tpr_LGTOT[ chip ]->SetTitle(title);
-    tpr_LGTOT[ chip ]->SetName(title);
-    tpr_LGTOT[ chip ]->SetMarkerStyle(20);
-    tpr_LGTOT[ chip ]->SetMarkerSize(1.2);
-    tpr_LGTOT[ chip ]->SetMarkerColor(chip+1);
-    tpr_LGTOT[ chip ]->Write(title,TObject::kOverwrite);
-  
-
-    if(tpr_LGinj[ chip ]->GetEntries() == 0){
-      continue;}
-    sprintf(title,"LGinj_chip%i_ch%i",chip,inj_CH);
-    tpr_LGinj[ chip ]->SetTitle(title);
-    tpr_LGinj[ chip ]->SetName(title);
-    tpr_LGinj[ chip ]->SetMarkerStyle(20);
-    tpr_LGinj[ chip ]->SetMarkerSize(1.2);
-    tpr_LGinj[ chip ]->SetMarkerColor(chip+1);
-    tpr_LGinj[ chip ]->Write(title,TObject::kOverwrite);
-
-
-    if(tpr_TOTinj[ chip ]->GetEntries() == 0){
-      continue;}
-    sprintf(title,"TOTinj_chip%i_ch%i",chip,inj_CH);
-    tpr_TOTinj[ chip ]->SetTitle(title);
-    tpr_TOTinj[ chip ]->SetName(title);
-    tpr_TOTinj[ chip ]->SetMarkerStyle(20);
-    tpr_TOTinj[ chip ]->SetMarkerSize(1.2);
-    tpr_TOTinj[ chip ]->SetMarkerColor(chip+1);
-    tpr_TOTinj[ chip ]->Write(title,TObject::kOverwrite);
-  }
-
   
 }
 
@@ -271,9 +177,12 @@ void single_module::Read_yaml(string yaml){
       int start = line.find(before_str);
       int end   = line.find("]");
       inj_CH_str = line.substr(start+before_str.length(),end - before_str.length() - start);
-      if(inj_CH_str != 0){
-	//cout << inj_CH_str << endl;
-	inj_CH = atoi(inj_CH_str.c_str());
+      if(inj_CH_str.length() != 0){
+	istringstream iss(inj_CH_str);
+	string token;
+	while(getline(iss,token,',')){
+	  inj_CH.push_back(stoi(token));
+	}
       }
     }
 
@@ -288,84 +197,11 @@ void single_module::Read_yaml(string yaml){
     line_label++;
   }
 
-  cout << "type: " << inj_sweep << ", CH:" << inj_CH << ", evt = " << inj_event << endl;
+  cout << "type: " << inj_sweep << ", CH: ";
+  for(int i = 0 ; i < (int)inj_CH.size() ; ++i){
+    cout << inj_CH[i] << " ";
+  }
+  cout << ", evt = " << inj_event << endl;
 
 }
-void single_module::Root_logon(){
 
-cout << endl << "Welcome to the ATLAS rootlogon.C" << endl;
-//
-// based on a style file from BaBar
-//
-
-//..BABAR style from RooLogon.C in workdir
-TStyle *atlasStyle= new TStyle("ATLAS","Atlas style");
-
-// use plain black on white colors
- Int_t icol=0;
-atlasStyle->SetFrameBorderMode(icol);
-atlasStyle->SetCanvasBorderMode(icol);
-atlasStyle->SetPadBorderMode(icol);
-atlasStyle->SetPadColor(icol);
-atlasStyle->SetCanvasColor(icol);
-atlasStyle->SetStatColor(icol);
-//atlasStyle->SetFillColor(icol);
-
-// set the paper & margin sizes
-atlasStyle->SetPaperSize(20,26);
-atlasStyle->SetPadTopMargin(0.1);
-//atlasStyle->SetPadRightMargin(0.05);
-atlasStyle->SetPadRightMargin(0.12);
-atlasStyle->SetPadBottomMargin(0.16);
-atlasStyle->SetPadLeftMargin(0.12);
-
-// use large fonts
-//Int_t font=72;
-Int_t font=32;
-Double_t tsize=0.05;
-atlasStyle->SetTextFont(font);
-
-
-atlasStyle->SetTextSize(tsize);
-atlasStyle->SetLabelFont(font,"x");
-atlasStyle->SetTitleFont(font,"x");
-atlasStyle->SetLabelFont(font,"y");
-atlasStyle->SetTitleFont(font,"y");
-atlasStyle->SetLabelFont(font,"z");
-atlasStyle->SetTitleFont(font,"z");
-
-atlasStyle->SetLabelSize(tsize,"x");
-atlasStyle->SetTitleSize(tsize,"x");
-atlasStyle->SetLabelSize(tsize,"y");
-atlasStyle->SetTitleSize(tsize,"y");
-atlasStyle->SetLabelSize(tsize,"z");
-atlasStyle->SetTitleSize(tsize,"z");
-//atlasStyle->SetTitleOffset(1.2,"y");
-
-//use bold lines and markers
-atlasStyle->SetMarkerStyle(20);
-atlasStyle->SetMarkerSize(1.2);
-atlasStyle->SetHistLineWidth(2.);
-atlasStyle->SetLineStyleString(2,"[12 12]"); // postscript dashes
-
-//get rid of X error bars and y error bar caps
-//atlasStyle->SetErrorX(0.001);
-
-//do not display any of the standard histogram decorations
-//atlasStyle->SetOptTitle(0);
-//atlasStyle->SetOptStat(1111);
-atlasStyle->SetOptStat(0);
-//atlasStyle->SetOptFit(1111);
-atlasStyle->SetOptFit(0);
-
-// put tick marks on top and RHS of plots
-atlasStyle->SetPadTickX(1);
-atlasStyle->SetPadTickY(1);
- 
-
-gROOT->SetStyle("Plain");
-
-//gStyle->SetPadTickX(1);
-//gStyle->SetPadTickY(1);
-
-}

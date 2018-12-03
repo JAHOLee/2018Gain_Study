@@ -31,8 +31,8 @@ public:
     TOFF = -1;
     HLTYPE = false;
     LTTYPE = false;
-    HGLG_FitSKI  = -1;
-    LGTOT_FitSKI = -1;
+    HGLG_FitSKI  = 0;
+    LGTOT_FitSKI = 0;
   };
   
   int L_ID ;

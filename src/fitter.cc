@@ -955,29 +955,29 @@ void fitter::fit_spline(){
   }
 
   
-  sprintf(title,"HGLG_sat_Spline.root");
-  TFile outf(title,"recreate");
-  TTree *outtree = new TTree("tree","tree");
-  int layerID,skirocID,channelID;
-  double m_p0,m_p1,m_sat,m_tpr_entry;
+  //sprintf(title,"HGLG_sat_Spline.root");
+  //TFile outf(title,"recreate");
+  //TTree *outtree = new TTree("tree","tree");
+  //int layerID,skirocID,channelID;
+  double m_p0,m_p1,m_sat;//,m_tpr_entry;
   bool   m_goodsat;
 
-  outtree->Branch("layerID",&layerID,"layerID/I");
-  outtree->Branch("skirocID",&skirocID,"skirocID/I");
-  outtree->Branch("channelID",&channelID,"channelID/I");
-  outtree->Branch("p0",&m_p0,"p0/D");
-  outtree->Branch("p1",&m_p1,"p1/D");
-  outtree->Branch("p_saturation",&m_sat,"p_saturation/D");
-  outtree->Branch("good_saturation",&m_goodsat,"good_saturation/O");
-  outtree->Branch("tpr_entry",&m_tpr_entry,"tpr_entry/D");
+  // outtree->Branch("layerID",&layerID,"layerID/I");
+  // outtree->Branch("skirocID",&skirocID,"skirocID/I");
+  // outtree->Branch("channelID",&channelID,"channelID/I");
+  // outtree->Branch("p0",&m_p0,"p0/D");
+  // outtree->Branch("p1",&m_p1,"p1/D");
+  // outtree->Branch("p_saturation",&m_sat,"p_saturation/D");
+  // outtree->Branch("good_saturation",&m_goodsat,"good_saturation/O");
+  // outtree->Branch("tpr_entry",&m_tpr_entry,"tpr_entry/D");
   
   
   for(int BD = 0 ;BD < MAXBOARDS ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       for(int CH = 0 ; CH < MAXCH ; ++CH){
-	layerID  = BD;
-	skirocID = SKI;
-	channelID = CH*2;
+	//layerID  = BD;
+	//skirocID = SKI;
+	//channelID = CH*2;
 	if( sat_good[BD][SKI][CH] == true){
 	  m_p0  = p0_ARR[BD][SKI][CH];
 	  m_p1  = p1_ARR[BD][SKI][CH];
@@ -992,10 +992,10 @@ void fitter::fit_spline(){
 	    m_p0  = p0_avg[BD][SKI];
 	    m_p1  = p1_avg[BD][SKI];
 	    m_sat = sat_avg[BD][SKI];}}
-	m_tpr_entry = tpr_entry[BD][SKI][CH];
+	//m_tpr_entry = tpr_entry[BD][SKI][CH];
 	m_goodsat = sat_good[BD][SKI][CH];
 
-	outtree->Fill();
+	//outtree->Fill();
 	
 	opt_val[(BD*4+SKI)*32+CH].L_ID = BD;
 	opt_val[(BD*4+SKI)*32+CH].S_ID = SKI;
@@ -1008,15 +1008,15 @@ void fitter::fit_spline(){
     }
   }
   
-  TH1D* hp0 = qualify(p0_ARR,2);
-  TH1D* hp1 = qualify(p1_ARR,0);
-  TH1D* hsat = qualify(sat_ARR,1);
-  hp0->SetTitle("p0_qualify");
-  hp0->SetName("p0_qualify");
-  hp1->SetTitle("p1_qualify");
-  hp1->SetName("p1_qualify");
-  hsat->SetTitle("sat_qualify");
-  hsat->SetName("sat_qualify");
+  // TH1D* hp0 = qualify(p0_ARR,2);
+  // TH1D* hp1 = qualify(p1_ARR,0);
+  // TH1D* hsat = qualify(sat_ARR,1);
+  // hp0->SetTitle("p0_qualify");
+  // hp0->SetName("p0_qualify");
+  // hp1->SetTitle("p1_qualify");
+  // hp1->SetName("p1_qualify");
+  // hsat->SetTitle("sat_qualify");
+  // hsat->SetName("sat_qualify");
 
   
   // sprintf(title,"plot_out/%iGeV/p0_hist_spline.png",labelE);
@@ -1026,8 +1026,8 @@ void fitter::fit_spline(){
   // sprintf(title,"plot_out/%iGeV/sat_hist_spline.png",labelE);
   // hsat->Draw(); c1->Update(); c1->SaveAs(title);
 
-  outf.Write();
-  outf.Close();
+  //outf.Write();
+  //outf.Close();
 
   delete linear;
   f.Close();
@@ -1363,7 +1363,7 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title,strin
   Gline.Draw();
   c1->cd();
   c1->Update();
-
+  //c1->WaitPrimitive();
 
   //getchar();
 }
@@ -1378,16 +1378,22 @@ void fitter::fit_LGTOT(){
 
   // Output variables
   double Offset_avg[MAXBD][MAXSKI],Gain_avg[MAXBD][MAXSKI];
+  double Trans_avg [MAXBD][MAXSKI];
   double Offset[MAXBD][MAXSKI][MAXCH],Gain[MAXBD][MAXSKI][MAXCH];
+  double Trans[MAXBD][MAXSKI][MAXCH];
+  int    fit_preselect_counter[MAXBD][MAXSKI];
   bool   Good_fit[MAXBD][MAXSKI][MAXCH];
   // Initialize output variables
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       Offset_avg[BD][SKI] = 0;
       Gain_avg  [BD][SKI] = 0;
+      Trans_avg [BD][SKI] = 0;
+      fit_preselect_counter [BD][SKI] = 0;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	Offset  [BD][SKI][CH] = -1;
 	Gain    [BD][SKI][CH] = -1;
+	Trans   [BD][SKI][CH] = -1;
 	Good_fit[BD][SKI][CH] = false;      }    }  }
 
   
@@ -1551,6 +1557,8 @@ void fitter::fit_LGTOT(){
 	
 	//Create residual plot to Draw
 	TH1D *h_res = new TH1D("","",tpr->GetNbinsX(),0,800);
+	bool coutflag = false;
+	double tmp_Trans = 0;
 	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
@@ -1559,7 +1567,13 @@ void fitter::fit_LGTOT(){
 	  double res = ( y - sat_fit->Eval(x) ) / sat_fit->Eval(x);
 	  double error = tpr->GetBinError(i)/(x*sat_fit->Eval(x));
 	  h_res->SetBinContent(i,res);
-	  h_res->SetBinError(i,error);	 }
+	  h_res->SetBinError(i,error);
+	  if(x > localmax_x && abs(res) > 0.05 && !coutflag){
+	    cout << "trans pt = " << y << endl;
+	    coutflag = true;
+	    tmp_Trans = y;
+	  }
+	}
 
 
 	ratio_plot(tpr,sat_fit,h_res,"TOT","LG");
@@ -1571,8 +1585,9 @@ void fitter::fit_LGTOT(){
 	//cout << localmax_x << " - " <<  localmax_y/tmp_gain << endl;
 	Offset  [BD][SKI][CH] = localmax_x - sat_fit->Eval(localmax_x)/tmp_gain;
 	Gain    [BD][SKI][CH] = tmp_gain;
-
-
+	Trans   [BD][SKI][CH] = tmp_Trans;
+        fit_preselect_counter [BD][SKI]++;
+	
 	delete s; delete h_derivative; delete h_res;
 
 	
@@ -1591,26 +1606,35 @@ void fitter::fit_LGTOT(){
 	  continue;
 	if(Gain  [BD][SKI][CH] < 3 || Gain  [BD][SKI][CH] > 7)
 	  continue;
+	if(Trans  [BD][SKI][CH] < 1000 || Trans  [BD][SKI][CH] > 1500)
+	  continue;
 	Good_fit [BD][SKI][CH] = true;
 	counter++;
 	Offset_avg[BD][SKI] += Offset  [BD][SKI][CH];
 	Gain_avg  [BD][SKI] += Gain    [BD][SKI][CH];
+	Trans_avg [BD][SKI] += Trans   [BD][SKI][CH];
       }
       Offset_avg[BD][SKI] /= counter;
       Gain_avg  [BD][SKI] /= counter;
-      
+      Trans_avg [BD][SKI] /= counter;
+      cout << "BD " << BD << ", SKI " << SKI << " member " << counter
+	   << "/" << fit_preselect_counter [BD][SKI] << endl;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	opt_val[(BD*4+SKI)*32+CH].LTTYPE = Good_fit [BD][SKI][CH];
 	if(Good_fit [BD][SKI][CH]){
 	  opt_val[(BD*4+SKI)*32+CH].T2L  = Gain[BD][SKI][CH];
-	  opt_val[(BD*4+SKI)*32+CH].TOFF = Offset[BD][SKI][CH];}
+	  opt_val[(BD*4+SKI)*32+CH].TOFF = Offset[BD][SKI][CH];
+	  opt_val[(BD*4+SKI)*32+CH].T2LT = Trans[BD][SKI][CH];
+	}
 	else if(counter == 0){
 	  opt_val[(BD*4+SKI)*32+CH].T2L  = 5.;
 	  opt_val[(BD*4+SKI)*32+CH].TOFF = 180;
+	  opt_val[(BD*4+SKI)*32+CH].T2LT = 1200;		  
 	}
 	else{
 	  opt_val[(BD*4+SKI)*32+CH].T2L  = Gain_avg[BD][SKI];
 	  opt_val[(BD*4+SKI)*32+CH].TOFF = Offset_avg[BD][SKI];
+	  opt_val[(BD*4+SKI)*32+CH].T2LT = Trans_avg[BD][SKI];
 	  opt_val[(BD*4+SKI)*32+CH].LGTOT_FitSKI = counter;
 	}
       }      

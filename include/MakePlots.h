@@ -17,8 +17,9 @@ class MakePlots{
   // Function
   bool Init_TFile(string TPro_outputname);
   void Write_TProfile();  // Takes time, fill every few runs
-  bool Check_Run(int RunN);
-
+  bool Check_Run(int RunN); //For TB runs
+  bool Check_Name(string fname); // For injection runs
+  
   // Drawing Function
   void root_logon();
   
@@ -26,7 +27,7 @@ class MakePlots{
   bool file_exist;
   int  history_Run;
   string TPro_output;
-  
+  string m_filename;
   
  private:
   // Function
@@ -34,7 +35,11 @@ class MakePlots{
 
   TFile *TPro_root;
   TTree *TPro_history;
+  TTree *TPro_fname;
+  
   setup_config *mysetup;
+
+  bool Is_Inj;
 };
 
 #endif

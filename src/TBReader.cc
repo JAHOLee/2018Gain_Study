@@ -263,7 +263,7 @@ void TBReader::TProfile_Maker(setup_config *SC,MakePlots *M){
     //Event selection
     //if(dwcReferenceType != 15) continue;    
 
-    for(int ihit = 0 ; ihit < rechit_amplitudeHigh->size() ; ++ihit){
+    for(int ihit = 0 ; ihit < (int)rechit_amplitudeHigh->size() ; ++ihit){
       
       double HG,LG,TOT;
       int chip,ch,BD_order,moduleID;
