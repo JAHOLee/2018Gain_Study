@@ -20,22 +20,12 @@
 single_module::single_module( TChain *chain, string filename ):T_Rawhit(chain)
 {
   cout << "Constructor of makePlot ... \n\n" << endl;
-
-  //TFile f(filename.c_str());
-  //T_Rawhit = (TTree*)f.Get("pulseshapeplotter/tree");
-   
-  root_out = new TFile("inj.root","update");
-  if(root_out->IsZombie())
-    root_out = new TFile("Inj.root","recreate");    
-  c1 = new TCanvas();
   fname = filename;
 }
 
 //Destructor
 single_module::~single_module()
 {
-  root_out->Close();
-  delete c1;
   cout << "\n\n";
   cout << "Destructor of makePlot ... " << endl;
 }
@@ -88,7 +78,7 @@ void single_module::Init(){
 
 }
 
-void single_module::Loop(){
+void single_module::Prerequisite(){
   Setname();
   if(!inj_sweep) {
     cout << "single_module::Loop only deal with sweep injection run!" << endl;
@@ -101,32 +91,37 @@ void single_module::Loop(){
     cout << nevents << " , " << inj_event << endl;
     cout << "yaml events not match! skip!" << endl;
     return;}
-  Fill_Tprofile();
 }
 
-void single_module::Fill_Tprofile(){
-  //Assume single channel injection
-  int MAXCHIP = 4;
-  char title[50];
+void single_module::Tprofile_Maker(){
 
-  int layer_to_moduleID[28] = { 78, 90, 89, 88, 77,
-				85, 84, 32, 69, 79,
-				67, 65, 76, 83, 35,
-				36, 70, 73, 44, 51,
-				86, 87, 54, 62, 64,
-				55, 59, 71 };
-  
+  Prerequisite();
 
   string  moduleID = moduleID_str.substr(6);
   int moduleID_int = atoi( moduleID.c_str() );
-  int BD_layer = -1;
 
-  for( int i = 0 ; i < 28; ++i ){
-    if(layer_to_moduleID[i] ==  moduleID_int)
-      BD_layer = i;  }
-  if(BD_layer == -1){
-    cout << moduleID_str << " not used in June TB!" << endl;
-    return;  }
+  if(SC->moduleID2BDorder.find(moduleID_int) == SC->moduleID2BDorder.end()){
+    cout << "Module " << moduleID_int << " is not in the List of Oct2018!"
+	 << end;
+    return;}
+  
+  int BD_index = SC->moduleID2BDorder.find(moduleID_int)->second;
+
+
+
+
+  
+  for(int ev = 0 ; ev < nevents ; ev++){
+    T_Rawhit->GetEntry(ev);
+    for(int ich = 0; ich < (int)inj_CH.size() ; ++ich){
+      int fill_CH = inj_CH[ich];
+      for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+	
+
+      }
+    }
+  }
+  
   
 }
 

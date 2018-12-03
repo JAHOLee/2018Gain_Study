@@ -21,6 +21,7 @@ int main_config = 1; // Run 179 ~ 722(config1), Run 751 ~ 1064(config2),
 // Usage
 void main_Print_help();
 void main_make_TProfile(string TProfile_name);
+void main_make_Inj_TProfile(string TProfile_name);
 void main_make_module_ntuple();
 void main_fitter(string TProfile_name);
 bool main_check_fname(string fname);
@@ -40,6 +41,8 @@ int main(int argc, char* argv[]){
     if(all_args[1] == "-h" || all_args[1] == "-H" ){ main_Print_help(); }
     else if(all_args[1] == "-t" || all_args[1] == "-T" ){
       main_make_TProfile(TProfile_name); }
+    else if(all_args[1] == "-i" || all_args[1] == "-I" ){
+      main_make_Inj_TProfile(TProfile_name); }
     else if(all_args[1] == "-n" || all_args[1] == "-N" ){
       main_make_module_ntuple(); }
     else if(all_args[1] == "-f" || all_args[1] == "-F" ){
@@ -79,7 +82,8 @@ void main_Print_help(){
   << "Module_Ntuple/TB(or Inj)/module***.root \n"
   << "(4) " << all_args[0] << " -f filename.root  : Use filename.root as"
   << " input file for fitting( Should be an output file of "
-  << all_args[0] << " -t)\n\n"
+  << all_args[0] << " -t)\n"
+  << "(5) " << all_args[0] << " -i : Create Injection run TProfile\n\n"
   << "For Usage (1) and (2), One should write the testbeam ntuple "
   << "into " << main_datainput << std::endl;
 };
@@ -102,7 +106,6 @@ void main_make_TProfile(string TProfile_name){
   SC->Read_Module_List(Module_configfile,main_config); // Set ModuleID List && map
   
   int TB_member     = 0;
-  int single_member = 0;
   
   string inputfile = main_datainput;
   ifstream infile(inputfile.c_str());
@@ -123,42 +126,24 @@ void main_make_TProfile(string TProfile_name){
     
     infile >> filename;
     if(infile.eof()) {
-      if(single_member > 1){
-	M-> Write_TProfile();
-      }
-      else if(TB_member > 1){
-	M-> Write_TProfile();}
+      M-> Write_TProfile();
       break;}
     if( filename.length() > 2){
       cout << "input file: " << filename << endl;
 
       TFile f( filename.c_str() );
       //check if root directories exist...
-      bool single_tree,pulseshape_tree,TB_ntuple,trackimpactntupler;
-      single_tree = f.GetListOfKeys()->Contains("treeproducer");
-      pulseshape_tree = f.GetListOfKeys()->Contains("pulseshapeplotter");
+      bool TB_ntuple,trackimpactntupler;
       TB_ntuple   = f.GetListOfKeys()->Contains("rechitntupler");
       trackimpactntupler = f.GetListOfKeys()->Contains("trackimpactntupler");
-      
-      if(single_tree && pulseshape_tree){
-	single_member++;
-	if(single_member != 0 && TB_member != 0){
-	  cout << "DO NOT merge both TB and Injection runs in "
-	       << main_datainput << "!!!!\nBREAK!\n" << endl;
-	  break; }
-	if( single_member % 100 == 0){ M-> Write_TProfile(); }
-	TChain *chain_single  = new TChain("pulseshapeplotter/tree");
-        chain_single->Add(filename.c_str());
-	single_module S(chain_single,filename);
-	S.Loop();
-	delete chain_single;
-      }
-      else if(TB_ntuple){
+      if(TB_ntuple){
 	TB_member++;
 	if(single_member != 0 && TB_member != 0){
 	  cout << "DO NOT merge both TB and Injection runs in "
 	       << main_datainput << "!!!!\nBREAK!\n" << endl;
-	  break; }	
+	  break; }
+
+	M -> Is_Inj = false;
 	TChain *chain  = new TChain("rechitntupler/hits");
 	chain ->Add(filename.c_str());
 	TChain *chain2 = new TChain("trackimpactntupler/impactPoints");
@@ -187,6 +172,38 @@ void main_make_TProfile(string TProfile_name){
   infile.close();
 }
 
+void main_make_Inj_TProfile(string TProfile_name){
+  TApplication *app = new TApplication("app",0,0);
+  string inputfile = main_datainput;
+  ifstream infile(inputfile.c_str());
+  
+  TProfile_name = string( main_outpath + string("Module_TProfile/") + "inj.root" );
+  cout << "Output file with be " << TProfile_name << endl;
+  if(DBG){
+    cout << "Press any key to continue...\n\n" << endl;
+    getchar();}
+
+  string filename;
+
+  while(true){    
+  infile >> filename;
+  if(infile.eof()) {
+    break;}
+  if( filename.length() > 2){
+    cout << "input file: " << filename << endl;
+    
+    TFile f( filename.c_str() );
+    //check if root directories exist...
+    bool pulseshape_tree;
+    pulseshape_tree = f.GetListOfKeys()->Contains("pulseshapeplotter");
+    if(pulseshape_tree){
+      TChain *chain_single  = new TChain("pulseshapeplotter/tree");
+      chain_single->Add(filename.c_str());
+      single_module S(chain_single,filename);
+      S.
+    }
+  }
+}
 void main_make_module_ntuple(){
   std::cout << "Under construction now QQ" << std::endl;
 }

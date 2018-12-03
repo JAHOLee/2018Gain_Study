@@ -1,6 +1,8 @@
 #ifndef single_module_h
 #define single_module_h
 
+#include "setup_config.h"
+#include "MakePlots.h"
 #include "TTree.h"
 #include "TROOT.h"
 #include "TH2Poly.h"
@@ -15,10 +17,7 @@ class single_module{
  public:
   single_module( TChain *chain, string filename );
   ~single_module();
-  
-
-  void Loop();
-  
+    
   //member
   string fname;
   string dirpath;
@@ -26,20 +25,20 @@ class single_module{
   bool   inj_sweep;
   vector<int> inj_CH;
   int    inj_event;
+
+  void Tprofile_Maker();
+
   
  private:
   
-  TCanvas *c1;
   TTree        *T_Rawhit;
-  TFile        *root_out;
   int          nevents;
 
   // Mainframe functions
+  void Prerequisite();
   void Init();
-  void Root_logon();
   void Read_yaml(string yaml);
   void Setname();
-  void Fill_Tprofile();
   
   //member
   string moduleID_str;
