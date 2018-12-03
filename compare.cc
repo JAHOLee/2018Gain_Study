@@ -62,7 +62,7 @@ void compare::compare_Ene(int method){
 
     mgr->Draw("sameAP");
     sprintf(title,"Board%i",BD);
-    leg->SetHeader(title,"C");
+    //leg->SetHeader(title,"C");
     leg->Draw("same");
     c1->Update();
     sprintf(title,"plot_out/EnergyComp/BD%i_p0.png",BD);
@@ -99,7 +99,7 @@ void compare::compare_Ene(int method){
 
     mgr->Draw("sameAP");
     sprintf(title,"Board%i",BD);
-    leg->SetHeader(title,"C");
+    //leg->SetHeader(title,"C");
     leg->Draw("same");
     c1->Update();
     sprintf(title,"plot_out/EnergyComp/BD%i_p1.png",BD);
@@ -137,7 +137,7 @@ void compare::compare_Ene(int method){
 
     mgr->Draw("sameAP");
     sprintf(title,"Board%i",BD);
-    leg->SetHeader(title,"C");
+    //leg->SetHeader(title,"C");
     leg->Draw("same");
     c1->Update();
     sprintf(title,"plot_out/EnergyComp/BD%i_sat.png",BD);
@@ -381,16 +381,16 @@ void compare::compare_method(int Ene){
   for(int i = 0 ; i < 3 ; ++i){
     
     if( i == 0){
-      leg->SetHeader("P0","C");
+      //leg->SetHeader("P0","C");
       leg->AddEntry(h[0][i],"Linear","L");
       leg->AddEntry(h[1][i],"Spline","L");
       h[0][i]->SetXTitle("P0");}
     
     else if( i == 1){
-      leg->SetHeader("P1","C");
+      //leg->SetHeader("P1","C");
       h[0][i]->SetXTitle("P1");}
     else if( i == 2){
-      leg->SetHeader("saturation_point","C");
+      //leg->SetHeader("saturation_point","C");
       h[0][i]->SetXTitle("saturationP(HGADC)");}
 
     h[1][i]->SetLineColor(2);

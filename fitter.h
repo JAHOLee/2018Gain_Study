@@ -9,26 +9,46 @@
 #include "TF1.h"
 #include <vector>
 
-const int MAXBD  = 1;
-const int MAXSKI = 1;
-const int MAXCH  = 2;
+const int MAXBD  = 28;
+const int MAXSKI = 4;
+const int MAXCH  = 32;
 
 using namespace std;
 
 class output{
-public:
-  int L_ID = -1;
-  int M_ID = -1;
-  int S_ID = -1;
-  int C_ID = -1;
-  double A2M  = -1;
-  double L2HT = -1;
-  double L2H  = -1;
-  double T2L  = -1;
-  double T2LT = -1;
-  double TOFF = -1;
-  bool   HLTYPE = false;
-  bool   LTTYPE = false;
+ public:
+  output(){ Init(); };
+  void Init(){
+    L_ID = -1;
+    M_ID = -1;
+    S_ID = -1;
+    C_ID = -1;
+    A2M  = -1;
+    L2HT = -1;
+    L2H  = -1;
+    T2L  = -1;
+    T2LT = -1;
+    TOFF = -1;
+    HLTYPE = false;
+    LTTYPE = false;
+    HGLG_FitSKI  = 0;
+    LGTOT_FitSKI = 0;}
+  int L_ID ;
+  int M_ID ;
+  int S_ID ;
+  int C_ID ;
+  double A2M  ;
+  double L2HT ;
+  double L2H  ;
+  double T2L  ;
+  double T2LT ;
+  double TOFF ;
+  bool   HLTYPE;
+  bool   LTTYPE;
+  int    HGLG_FitSKI;
+  int LGTOT_FitSKI;
+
+
 };
 
 
