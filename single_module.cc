@@ -131,7 +131,7 @@ void single_module::Fill_Tprofile(){
     return;  }
 
   TDirectory *dir;
-  sprintf(title,"Board_%i",BD_layer);
+  sprintf(title,"Module_%i",moduleID_int);
  
   if(!root_out->GetListOfKeys()->Contains(title)){
     dir = root_out->mkdir(title,moduleID_str.c_str());}
