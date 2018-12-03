@@ -985,8 +985,8 @@ void fitter::fit_spline(){
 	else{
 	  if(count_avg[BD][SKI] == 0){
 	    m_p0  = -1;
-	    m_p1  = -1;
-	    m_sat = -1;
+	    m_p1  = 8;
+	    m_sat = 1400;
 	  }
 	  else{
 	    m_p0  = p0_avg[BD][SKI];
