@@ -29,12 +29,12 @@ bool MakePlots::Init_TFile(string TPro_outputname){
       return false;}
     TPro_history -> SetBranchAddress("history_Run",&history_Run);
 
-    TPro_fname = (TTree*)TPro_root->Get("Filename");
-    if(TPro_fname == NULL){ 
-      cout << "\nInput file has no object named " << "Filename! " << endl;
-      cout << "Please choose another root file or create one.\n\n" << endl;
-      return false;}
-    TPro_fname -> SetBranchAddress("Filename_Inj",&m_filename);
+    // TPro_fname = (TTree*)TPro_root->Get("Filename");
+    // if(TPro_fname == NULL){ 
+    //   cout << "\nInput file has no object named " << "Filename! " << endl;
+    //   cout << "Please choose another root file or create one.\n\n" << endl;
+    //   return false;}
+    // TPro_fname -> SetBranchAddress("Filename_Inj",&m_filename);
 
     
     // Get the TProfiles
@@ -61,8 +61,8 @@ bool MakePlots::Init_TFile(string TPro_outputname){
     TPro_root = new TFile(TPro_outputname.c_str(),"recreate");
     TPro_history = new TTree("history","history");
     TPro_history-> Branch("history_Run",&history_Run);
-    TPro_fname   = new TTree("Filename","Filename");
-    TPro_history-> Branch("Filename_Inj",&m_filename);
+    // TPro_fname   = new TTree("Filename","Filename");
+    // TPro_history-> Branch("Filename_Inj",&m_filename);
 
     
     int HGLGBIN  = 400;

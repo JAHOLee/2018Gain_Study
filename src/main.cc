@@ -141,10 +141,10 @@ void main_make_TProfile(string TProfile_name){
       trackimpactntupler = f.GetListOfKeys()->Contains("trackimpactntupler");
       if(TB_ntuple){
 	TB_member++;
-	if(TB_member != 0){
-	  cout << "DO NOT merge both TB and Injection runs in "
-	       << main_datainput << "!!!!\nBREAK!\n" << endl;
-	  break; }
+	// if(TB_member != 0){
+	//   cout << "DO NOT merge both TB and Injection runs in "
+	//        << main_datainput << "!!!!\nBREAK!\n" << endl;
+	//   break; }
 
 	TChain *chain  = new TChain("rechitntupler/hits");
 	chain ->Add(filename.c_str());
