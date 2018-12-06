@@ -1,8 +1,12 @@
+/////////////////////////////////////////////////////////
+// Arthor: Chia-hung Chien  chchien521@gmail.com       
+// Just use the same class name as we used to.
+// Date : 20-June-2018
+/////////////////////////////////////////////////////////
+
 #ifndef single_module_h
 #define single_module_h
 
-#include "setup_config.h"
-#include "MakePlots.h"
 #include "TTree.h"
 #include "TROOT.h"
 #include "TH2Poly.h"
@@ -15,30 +19,32 @@ using namespace std;
 
 class single_module{
  public:
-  single_module( TChain *chain, string filename );
+  single_module( TChain *chain, string filename,string outname="inj.root" );
   ~single_module();
-    
+  
+
+  void Loop();
+  
   //member
   string fname;
   string dirpath;
   string inj_CH_str;
   bool   inj_sweep;
-  vector<int> inj_CH;
   int    inj_event;
-
-  void Tprofile_Maker();
-
+  int    inj_CH;
+  vector<int> inj_CH_vec;
   
  private:
   
   TTree        *T_Rawhit;
+  TFile        *root_out;
   int          nevents;
 
   // Mainframe functions
-  void Prerequisite();
   void Init();
   void Read_yaml(string yaml);
   void Setname();
+  void Fill_Tprofile();
   
   //member
   string moduleID_str;

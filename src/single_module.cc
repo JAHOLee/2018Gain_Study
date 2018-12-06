@@ -13,19 +13,30 @@
 #include "TChain.h"
 #include "TH1.h"
 #include "TH2.h"
+#include "fitter.h"
 #include <utility>
 #include "TProfile.h"
 #include <sstream>
 
-single_module::single_module( TChain *chain, string filename ):T_Rawhit(chain)
+
+single_module::single_module( TChain *chain, string filename, string outname ):T_Rawhit(chain)
 {
   cout << "Constructor of makePlot ... \n\n" << endl;
+
+  //TFile f(filename.c_str());
+  //T_Rawhit = (TTree*)f.Get("pulseshapeplotter/tree");
+   
+  root_out = new TFile(outname.c_str(),"update");
+  if(root_out->IsZombie())
+    root_out = new TFile(outname.c_str(),"recreate");    
   fname = filename;
+  
 }
 
 //Destructor
 single_module::~single_module()
 {
+  root_out->Close();
   cout << "\n\n";
   cout << "Destructor of makePlot ... " << endl;
 }
@@ -78,7 +89,7 @@ void single_module::Init(){
 
 }
 
-void single_module::Prerequisite(){
+void single_module::Loop(){
   Setname();
   if(!inj_sweep) {
     cout << "single_module::Loop only deal with sweep injection run!" << endl;
@@ -91,38 +102,128 @@ void single_module::Prerequisite(){
     cout << nevents << " , " << inj_event << endl;
     cout << "yaml events not match! skip!" << endl;
     return;}
+  Fill_Tprofile();
 }
 
-void single_module::Tprofile_Maker(){
+void single_module::Fill_Tprofile(){
+  //Assume single channel injection
+  char title[50];
 
-  Prerequisite();
+  // int layer_to_moduleID[28] = { 78, 90, 89, 88, 77,
+  // 				85, 84, 32, 69, 79,
+  // 				67, 65, 76, 83, 35,
+  // 				36, 70, 73, 44, 51,
+  // 				86, 87, 54, 62, 64,
+  // 				55, 59, 71 };
+  
 
   string  moduleID = moduleID_str.substr(6);
   int moduleID_int = atoi( moduleID.c_str() );
+  //int BD_layer = -1;
 
-  if(SC->moduleID2BDorder.find(moduleID_int) == SC->moduleID2BDorder.end()){
-    cout << "Module " << moduleID_int << " is not in the List of Oct2018!"
-	 << end;
-    return;}
+  // for( int i = 0 ; i < 28; ++i ){
+  //   if(layer_to_moduleID[i] ==  moduleID_int)
+  //     BD_layer = i;  }
+  // if(BD_layer == -1){
+  //   cout << moduleID_str << " not used in June TB!" << endl;
+  //   return;  }
+
+  TDirectory *dir;
+  sprintf(title,"Module_%i",moduleID_int);
+ 
+  if(!root_out->GetListOfKeys()->Contains(title)){
+    dir = root_out->mkdir(title,moduleID_str.c_str());}
+  else{
+    dir = (TDirectory*)root_out->Get(title);  }
+  dir->cd();
+
+  for(int injCHID = 0 ; injCHID < (int)inj_CH_vec.size() ; ++injCHID){
+    inj_CH = inj_CH_vec[injCHID];
+    
+    TProfile *tpr_HGLG[MAXSKI];
+    TProfile *tpr_LGTOT[MAXSKI];
+    TProfile *tpr_LGinj[MAXSKI];
+    TProfile *tpr_TOTinj[MAXSKI];
+
   
-  int BD_index = SC->moduleID2BDorder.find(moduleID_int)->second;
+    for(int chip = 0 ; chip < MAXSKI ; ++chip){
+      sprintf(title,"HGLG_M%i_chip%i_ch%i",moduleID_int,chip,inj_CH);
+      tpr_HGLG[chip] = new TProfile(title,title,400,0,800,0,4000);
+      sprintf(title,"LGTOT_M%i_chip%i_ch%i",moduleID_int,chip,inj_CH);
+      tpr_LGTOT[chip] = new TProfile(title,title,300,0,800,0,3000);
+    
+      sprintf(title,"LGinj_M%i_chip%i_ch%i",moduleID_int,chip,inj_CH);
+      tpr_LGinj[chip] = new TProfile(title,title,400,0,4000,0,3000);
+      sprintf(title,"TOTinj_M%i_chip%i_ch%i",moduleID_int,chip,inj_CH);
+      tpr_TOTinj[chip] = new TProfile(title,title,400,0,4000,0,3000);
+    
+    }
 
-
-
-
-  
-  for(int ev = 0 ; ev < nevents ; ev++){
-    T_Rawhit->GetEntry(ev);
-    for(int ich = 0; ich < (int)inj_CH.size() ; ++ich){
-      int fill_CH = inj_CH[ich];
-      for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
-	
-
+    for(int ev = 0 ; ev < nevents ; ++ev){
+      T_Rawhit->GetEntry(ev);
+      for(int hit = 0 ; hit < (int) HighGainADC->size() ; ++hit){
+	if(channelID->at(hit) != inj_CH) continue;
+	double HG,LG,TOT;
+	int chip,inj_daq;
+	HG   = HighGainADC->at(hit);
+	LG   = LowGainADC->at(hit);
+	TOT  = TotSlow->at(hit);
+	chip = skirocID->at(hit);
+	inj_daq = (int) 4096./nevents * ev;
+	if( LG < 5 ) continue;
+	tpr_HGLG[chip]->Fill(LG,HG,1);
+	tpr_LGTOT[chip]->Fill(TOT,LG,1);
+	tpr_LGinj[chip]->Fill(inj_daq,LG,1);
+	tpr_TOTinj[chip]->Fill(inj_daq,TOT,1);
       }
     }
+  
+    for(int chip = 0 ; chip < MAXSKI ; ++chip){
+
+      if(tpr_HGLG[ chip ]->GetEntries() == 0){
+	continue;}	
+      sprintf(title,"HGLG_chip%i_ch%i",chip,inj_CH);
+      tpr_HGLG[ chip ]->SetTitle(title);
+      tpr_HGLG[ chip ]->SetName(title);
+      tpr_HGLG[ chip ]->SetMarkerStyle(20);
+      tpr_HGLG[ chip ]->SetMarkerSize(1.2);
+      tpr_HGLG[ chip ]->SetMarkerColor(chip+1);
+      tpr_HGLG[ chip ]->Write(title,TObject::kOverwrite);
+  
+      if(tpr_LGTOT[ chip ]->GetEntries() == 0){
+	continue;}
+      sprintf(title,"LGTOT_chip%i_ch%i",chip,inj_CH);
+      tpr_LGTOT[ chip ]->SetTitle(title);
+      tpr_LGTOT[ chip ]->SetName(title);
+      tpr_LGTOT[ chip ]->SetMarkerStyle(20);
+      tpr_LGTOT[ chip ]->SetMarkerSize(1.2);
+      tpr_LGTOT[ chip ]->SetMarkerColor(chip+1);
+      tpr_LGTOT[ chip ]->Write(title,TObject::kOverwrite);
+  
+
+      if(tpr_LGinj[ chip ]->GetEntries() == 0){
+	continue;}
+      sprintf(title,"LGinj_chip%i_ch%i",chip,inj_CH);
+      tpr_LGinj[ chip ]->SetTitle(title);
+      tpr_LGinj[ chip ]->SetName(title);
+      tpr_LGinj[ chip ]->SetMarkerStyle(20);
+      tpr_LGinj[ chip ]->SetMarkerSize(1.2);
+      tpr_LGinj[ chip ]->SetMarkerColor(chip+1);
+      tpr_LGinj[ chip ]->Write(title,TObject::kOverwrite);
+
+
+      if(tpr_TOTinj[ chip ]->GetEntries() == 0){
+	continue;}
+      sprintf(title,"TOTinj_chip%i_ch%i",chip,inj_CH);
+      tpr_TOTinj[ chip ]->SetTitle(title);
+      tpr_TOTinj[ chip ]->SetName(title);
+      tpr_TOTinj[ chip ]->SetMarkerStyle(20);
+      tpr_TOTinj[ chip ]->SetMarkerSize(1.2);
+      tpr_TOTinj[ chip ]->SetMarkerColor(chip+1);
+      tpr_TOTinj[ chip ]->Write(title,TObject::kOverwrite);
+    }
+
   }
-  
-  
 }
 
 void single_module::Setname(){
@@ -173,11 +274,14 @@ void single_module::Read_yaml(string yaml){
       int end   = line.find("]");
       inj_CH_str = line.substr(start+before_str.length(),end - before_str.length() - start);
       if(inj_CH_str.length() != 0){
-	istringstream iss(inj_CH_str);
-	string token;
-	while(getline(iss,token,',')){
-	  inj_CH.push_back(stoi(token));
+	inj_CH_vec.clear();
+	istringstream iss (inj_CH_str);
+	string slice;
+	while(getline(iss,slice,',')){
+	  inj_CH = atoi(slice.c_str());
+	  inj_CH_vec.push_back(inj_CH);
 	}
+	//cout << inj_CH_str << endl;
       }
     }
 
@@ -192,11 +296,6 @@ void single_module::Read_yaml(string yaml){
     line_label++;
   }
 
-  cout << "type: " << inj_sweep << ", CH: ";
-  for(int i = 0 ; i < (int)inj_CH.size() ; ++i){
-    cout << inj_CH[i] << " ";
-  }
-  cout << ", evt = " << inj_event << endl;
+  cout << "type: " << inj_sweep << ", CH:" << inj_CH << ", evt = " << inj_event << endl;
 
 }
-

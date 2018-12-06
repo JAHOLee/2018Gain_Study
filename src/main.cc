@@ -30,6 +30,8 @@ vector<string> all_args;
 bool DBG = false;
 
 int main(int argc, char* argv[]){
+  TApplication *app = new TApplication("app",0,0);
+  app->Init();
   string TProfile_name = main_default_rootname;
   for(int i = 0 ; i < argc ; ++i){
     arg_string = argv[i];
@@ -53,15 +55,17 @@ int main(int argc, char* argv[]){
     return 1;
   }
   else if(argc == 3){
+    bool check = main_check_fname(TProfile_name);
+    if(!check){ TProfile_name = main_default_rootname; }
+    
     if(all_args[1] == "-t" || all_args[1] == "-T" ){
-      TProfile_name = all_args[2];
-      bool check = main_check_fname(TProfile_name);
-      if(!check){ TProfile_name = main_default_rootname; }
+      TProfile_name = all_args[2]; 
       main_make_TProfile(TProfile_name); }
+    else if(all_args[1] == "-i" || all_args[1] == "-I" ){
+      TProfile_name = all_args[2];
+      main_make_Inj_TProfile(TProfile_name); }
     else if(all_args[1] == "-f" || all_args[1] == "-F" ){
       TProfile_name = all_args[2];
-      bool check = main_check_fname(TProfile_name);
-      if(!check){ TProfile_name = main_default_rootname; }
       main_fitter(TProfile_name);}
     else{
       std::cout << "Unknown option... print usage" << std::endl;
@@ -97,7 +101,6 @@ bool main_check_fname(string fname){
 }
 
 void main_make_TProfile(string TProfile_name){
-  TApplication *app = new TApplication("app",0,0);
     
   // Initialize output directory
   setup_config *SC = new setup_config;
@@ -138,7 +141,7 @@ void main_make_TProfile(string TProfile_name){
       trackimpactntupler = f.GetListOfKeys()->Contains("trackimpactntupler");
       if(TB_ntuple){
 	TB_member++;
-	if(single_member != 0 && TB_member != 0){
+	if(TB_member != 0){
 	  cout << "DO NOT merge both TB and Injection runs in "
 	       << main_datainput << "!!!!\nBREAK!\n" << endl;
 	  break; }
@@ -172,11 +175,10 @@ void main_make_TProfile(string TProfile_name){
 }
 
 void main_make_Inj_TProfile(string TProfile_name){
-  TApplication *app = new TApplication("app",0,0);
   string inputfile = main_datainput;
   ifstream infile(inputfile.c_str());
   
-  TProfile_name = string( main_outpath + string("Module_TProfile/") + "inj.root" );
+  TProfile_name = string( main_outpath + string("Module_TProfile/") + TProfile_name );
   cout << "Output file with be " << TProfile_name << endl;
   if(DBG){
     cout << "Press any key to continue...\n\n" << endl;
@@ -185,29 +187,38 @@ void main_make_Inj_TProfile(string TProfile_name){
   string filename;
 
   while(true){    
-  infile >> filename;
-  if(infile.eof()) {
-    break;}
-  if( filename.length() > 2){
-    cout << "input file: " << filename << endl;
+    infile >> filename;
+    if(infile.eof()) {
+      break;}
+    if( filename.length() > 2){
+      cout << "input file: " << filename << endl;
     
-    TFile f( filename.c_str() );
-    //check if root directories exist...
-    bool pulseshape_tree;
-    pulseshape_tree = f.GetListOfKeys()->Contains("pulseshapeplotter");
-    if(pulseshape_tree){
-      TChain *chain_single  = new TChain("pulseshapeplotter/tree");
-      chain_single->Add(filename.c_str());
-      single_module S(chain_single,filename);
-      S.
+      TFile f( filename.c_str() );
+      //check if root directories exist...
+      bool pulseshape_tree;
+      pulseshape_tree = f.GetListOfKeys()->Contains("pulseshapeplotter");
+      if(pulseshape_tree){
+	TChain *chain_single  = new TChain("pulseshapeplotter/tree");
+	chain_single->Add(filename.c_str());
+	single_module S(chain_single,filename,TProfile_name);
+	S.Loop();
+      }
+      else{
+	cout << filename.c_str() << " contains unknown tree to me ..." << endl;}
+      f.Close();
+    }
+    else{
+      cout << "file " << filename << " is not available, please check "
+	   << inputfile << endl;
     }
   }
+  infile.close();
 }
 void main_make_module_ntuple(){
   std::cout << "Under construction now QQ" << std::endl;
 }
 void main_fitter(string TProfile_name){
-  TApplication *app = new TApplication("app",0,0);
+
 
   cout << "Fitting file with be " << TProfile_name << endl;
   if(DBG){

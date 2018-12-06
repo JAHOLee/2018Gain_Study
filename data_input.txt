@@ -1,1 +1,1 @@
-test_data/ntuple_1120_cfg3.root
+../New_Gain_Saturation/test_data/ntuple_557.root

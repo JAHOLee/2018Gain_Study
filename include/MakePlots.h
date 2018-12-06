@@ -28,7 +28,7 @@ class MakePlots{
   int  history_Run;
   string TPro_output;
   string m_filename;
-  bool Is_Inj;
+
   
  private:
   // Function
