@@ -143,7 +143,6 @@ void main_make_TProfile(string TProfile_name){
 	       << main_datainput << "!!!!\nBREAK!\n" << endl;
 	  break; }
 
-	M -> Is_Inj = false;
 	TChain *chain  = new TChain("rechitntupler/hits");
 	chain ->Add(filename.c_str());
 	TChain *chain2 = new TChain("trackimpactntupler/impactPoints");
