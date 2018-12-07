@@ -43,6 +43,7 @@ class single_module{
   // Mainframe functions
   void Init();
   void Read_yaml(string yaml);
+  void Correct_path_message();
   void Setname();
   void Fill_Tprofile();
   

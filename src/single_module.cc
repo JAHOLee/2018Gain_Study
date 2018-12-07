@@ -21,7 +21,7 @@
 
 single_module::single_module( TChain *chain, string filename, string outname ):T_Rawhit(chain)
 {
-  cout << "Constructor of makePlot ... \n\n" << endl;
+  cout << "Constructor of single_module ... \n\n" << endl;
 
   //TFile f(filename.c_str());
   //T_Rawhit = (TTree*)f.Get("pulseshapeplotter/tree");
@@ -38,7 +38,7 @@ single_module::~single_module()
 {
   root_out->Close();
   cout << "\n\n";
-  cout << "Destructor of makePlot ... " << endl;
+  cout << "Destructor of single_module ... " << endl;
 }
 
 void single_module::Init(){
@@ -225,12 +225,21 @@ void single_module::Fill_Tprofile(){
 
   }
 }
+void single_module::Correct_path_message(){
+  cout << "Can't read the path of the root or yaml, please put a path like:" 
+       << endl;
+  cout << " module120/ \n module120/*.root or module120/arbitrarypath/*.root"
+       << "\n module120/yaml/*.yaml" << endl;
+}
 
 void single_module::Setname(){
   int module_start = fname.find("module");
   int module_end   = fname.find("/",module_start+1);
   int lastslash    = fname.find_last_of("/");
   int findroot     = fname.find(".root");
+  if(module_start == -1 || module_end == -1 || lastslash == -1 || findroot == -1){
+    Correct_path_message();}
+
   moduleID_str = fname.substr(module_start,module_end-module_start);
   labelID   = fname.substr(lastslash+1,findroot-lastslash-1);
   filepath  = fname.substr(0,module_end+1);
@@ -252,7 +261,7 @@ void single_module::Read_yaml(string yaml){
 
   ifstream yaml_in(yaml);
   if(!yaml_in.is_open()){
-    cout << "can't find yaml file " << yaml << endl;
+    Correct_path_message();
     return;}
 
   string line;
