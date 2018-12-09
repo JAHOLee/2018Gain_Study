@@ -771,7 +771,9 @@ void fitter::fit_spline(){
 
 	//Get TProfile x,y to vectors for TSpline input
 	int Nbin = tpr->GetNbinsX();
-	vector<double> HG,LG;
+	vector<double> HG_tmp,LG_tmp,HG,LG;
+	HG_tmp.clear();
+	LG_tmp.clear();
 	HG.clear();
 	LG.clear();
 	//int get_pt_for_each = (labelE == -1) ? 2 : 8;
@@ -781,13 +783,26 @@ void fitter::fit_spline(){
 	  double y = tpr->GetBinContent(i);
 	  
 	  if( x > 0 && x < 300 && y != 0 && i % get_pt_for_each == 0){
-	    LG.push_back(x);
-	    HG.push_back(y);}
+	    LG_tmp.push_back(x);
+	    HG_tmp.push_back(y);}
 	  if( x > 300 && y != 0 && i%5 == 0){
-	    LG.push_back(x);
-	    HG.push_back(y);}
+	    LG_tmp.push_back(x);
+	    HG_tmp.push_back(y);}
 	}
-
+	
+	//Prevent spike
+	for(int i = 1 ; i < (int)HG.size()-1 ; ++i){
+	  double x = LG_tmp[i];
+	  double y = HG_tmp[i];
+	  double y_previous = HG_tmp[i-1];
+	  double y_latter   = HG_tmp[i+1];
+	  if( y > y_previous && y > y_latter ){ continue; }
+	  else if( y < y_previous && y < y_latter ){ continue; }
+	  else{
+	    HG.push_back(y);
+	    LG.push_back(x);
+	  }
+	}
 	
 	int np = LG.size();
 	if(np == 0) continue;
@@ -1372,7 +1387,10 @@ void fitter::ratio_plot(TProfile *tpr,TF1 *fit,TH1D *hratio,string X_title,strin
 
 void fitter::fit_LGTOT(){
 
-  bool Injection_run = false;
+  bool runtype = myplots->Check_Fit_Type();
+  bool Injection_run;
+  if(runtype){ Injection_run = false; }
+  else{ Injection_run = true; }
   
   gStyle->SetOptStat(0); // Remove the stat box
   
@@ -1708,7 +1726,7 @@ void fitter::fit_output(){
   fit_spline();
 
   cout << "Starting LGTOT " << fname << " fitting... " << endl;
-  //fit_LGTOT();
+  fit_LGTOT();
   
   ofstream calib_result;
   int name_end = fname.find(".root");

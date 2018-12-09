@@ -107,7 +107,10 @@ void MakePlots::Init_Pointers(){
     }
   }
 }
-
+bool MakePlots::Check_Fit_Type(){
+  if( TPro_history->GetEntries() == 0){ return false; }
+  else{ return true; }
+}
 bool MakePlots::Check_Run(int RunN){
 
   bool doublefill = false;

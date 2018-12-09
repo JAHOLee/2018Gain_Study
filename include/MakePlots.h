@@ -19,7 +19,8 @@ class MakePlots{
   void Write_TProfile();  // Takes time, fill every few runs
   bool Check_Run(int RunN); //For TB runs
   bool Check_Name(string fname); // For injection runs
-  
+  bool Check_Fit_Type(); // false = injection run, true = TB  
+
   // Drawing Function
   void root_logon();
   
