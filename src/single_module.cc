@@ -34,7 +34,7 @@ single_module::single_module( TChain *chain, string filename, string outname ):T
   TTree *TPro_history = new TTree("history","history");
   int history_Run;
   TPro_history-> Branch("history_Run",&history_Run);
-  TPro_history->Write("history_Run",TObject::kOverwrite);
+  TPro_history->Write("history",TObject::kOverwrite);
   
   fname = filename; 
 }
