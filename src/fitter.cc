@@ -12,8 +12,9 @@
 int MINPOINT = 5;
 int MAXPOINT = 40;
 
-fitter::fitter(setup_config *SC,string filename){
+fitter::fitter(setup_config *SC,MakePlots *M,string filename){
   mysetup = SC;
+  myplots = M;
   fname = filename;
   c1 = new TCanvas();
 }
@@ -755,17 +756,18 @@ void fitter::fit_spline(){
 	sat_ARR[BD][SKI][CH] = -999;
 	sat_good[BD][SKI][CH] = false;
 	tpr_entry[BD][SKI][CH] = 0;
-	int true_ch = CH*2;
-	sprintf(title,"Module%i/HGLG_chip%i_ch%i",moduleID,SKI,true_ch);
-	tpr = (TProfile *)f.Get(title);
+	// int true_ch = CH*2;
+	// sprintf(title,"Module%i/HGLG_chip%i_ch%i",moduleID,SKI,true_ch);
+	tpr = myplots->HG_LG[BD][SKI][CH];
 	if(tpr == NULL) continue;
 	tpr_entry[BD][SKI][CH] = tpr->GetEntries();
 	if(tpr->GetEntries() < 1500) continue;
 
-	sprintf(title,"Module%i_HGLG_chip%i_ch%i",moduleID,SKI,true_ch);
+	// sprintf(title,"Module%i_HGLG_chip%i_ch%i",moduleID,SKI,true_ch);
 	tpr->Rebin(rebinN);
-	tpr->SetName(title);
-	tpr->SetTitle(title);
+	cout << tpr->GetTitle() << endl;
+	// tpr->SetName(title);
+	// tpr->SetTitle(title);
 
 	//Get TProfile x,y to vectors for TSpline input
 	int Nbin = tpr->GetNbinsX();
@@ -1401,10 +1403,7 @@ void fitter::fit_LGTOT(){
   TF1 *sat_fit   = new TF1("","pol1"); // Fitting linear function
 
   // TProfile to fit, also create histogram for Spline purpose
-  TProfile *tpr = (TProfile *)f.Get("Module78/LGTOT_chip2_ch44");
-  TH1D *h1 = new TH1D("","",tpr->GetNbinsX(),0,800);
   int rebinN = 1; // Rebin if the bins are too much
-  h1->Rebin(rebinN);
 
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     int moduleID = mysetup->Module_List[BD];
@@ -1415,9 +1414,10 @@ void fitter::fit_LGTOT(){
 	//cout << "CH " << CH << endl;
 
 	// Get TProfile
-	int true_ch = CH*2;
-	sprintf(title,"Module%i/LGTOT_chip%i_ch%i",moduleID,SKI,true_ch);
-	tpr = (TProfile *)f.Get(title);
+	// int true_ch = CH*2;
+	// sprintf(title,"Module%i/LGTOT_chip%i_ch%i",moduleID,SKI,true_ch);
+	// tpr = (TProfile *)f.Get(title);
+	TProfile *tpr = myplots->LG_TOT[BD][SKI][CH];
 	if(tpr == NULL) continue; // Prevention
 	
 	tpr->Rebin(rebinN);
@@ -1658,7 +1658,7 @@ void fitter::fit_LGTOT(){
   // outtree->Branch("good_saturation",&m_goodsat,"good_saturation/O");
   // outtree->Branch("tpr_entry",&m_tpr_entry,"tpr_entry/D");
  
-  delete sat_fit; delete h1;  
+  delete sat_fit;  
   f.Close();  
 
 
@@ -1708,7 +1708,7 @@ void fitter::fit_output(){
   fit_spline();
 
   cout << "Starting LGTOT " << fname << " fitting... " << endl;
-  fit_LGTOT();
+  //fit_LGTOT();
   
   ofstream calib_result;
   int name_end = fname.find(".root");

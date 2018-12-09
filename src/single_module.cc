@@ -28,9 +28,15 @@ single_module::single_module( TChain *chain, string filename, string outname ):T
    
   root_out = new TFile(outname.c_str(),"update");
   if(root_out->IsZombie())
-    root_out = new TFile(outname.c_str(),"recreate");    
-  fname = filename;
+    root_out = new TFile(outname.c_str(),"recreate");
+
+  //Create dummy history tree with 0 entry
+  TTree *TPro_history = new TTree("history","history");
+  int history_Run;
+  TPro_history-> Branch("history_Run",&history_Run);
+  TPro_history->Write();
   
+  fname = filename; 
 }
 
 //Destructor

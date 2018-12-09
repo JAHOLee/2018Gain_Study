@@ -230,11 +230,11 @@ void main_fitter(string TProfile_name){
   SC->Read_Module_List(Module_configfile,main_config); // Set ModuleID List && map, config == 1 for fitter
   
   MakePlots *M = new MakePlots(SC);
-  // bool turefile = M->Init_TFile(TProfile_name);
-  // if(!turefile){ return; }
+  bool turefile = M->Init_TFile(TProfile_name);
+  if(!turefile){ return; }
 
   M->root_logon();
-  fitter f(SC,TProfile_name);  
+  fitter f(SC,M,TProfile_name);  
   //f.fit_LGTOT();
   f.fit_output();
 };

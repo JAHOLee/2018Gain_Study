@@ -55,7 +55,7 @@ public:
 
 class fitter{
  public:
-  fitter(setup_config *SC,string filename);
+  fitter(setup_config *SC,MakePlots *M, string filename);
  ~fitter();
   
  void fit_Graph();
@@ -102,6 +102,7 @@ class fitter{
  vector<double> LG_vec;
  vector<double> TOT_vec;
  setup_config *mysetup;
+ MakePlots    *myplots;
  string fname;
  
 };
