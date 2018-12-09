@@ -717,6 +717,11 @@ void fitter::fit_Draw(){
 }
 
 void fitter::fit_spline(){
+
+  bool runtype = myplots->Check_Fit_Type();
+  bool Injection_run;
+  if(runtype){ Injection_run = false; }
+  else{ Injection_run = true; }
   
   char title[50];
 
@@ -761,11 +766,11 @@ void fitter::fit_spline(){
 	tpr = myplots->HG_LG[BD][SKI][CH];
 	if(tpr == NULL) continue;
 	tpr_entry[BD][SKI][CH] = tpr->GetEntries();
-	if(tpr->GetEntries() < 1500) continue;
+	if(!Injection_run && tpr->GetEntries() < 1500) continue;
 
 	// sprintf(title,"Module%i_HGLG_chip%i_ch%i",moduleID,SKI,true_ch);
 	tpr->Rebin(rebinN);
-	cout << tpr->GetTitle() << endl;
+	// cout << tpr->GetTitle() << endl;
 	// tpr->SetName(title);
 	// tpr->SetTitle(title);
 
@@ -777,24 +782,25 @@ void fitter::fit_spline(){
 	HG.clear();
 	LG.clear();
 	//int get_pt_for_each = (labelE == -1) ? 2 : 8;
-	int get_pt_for_each = 8;
+
+	int get_pt_for_each = (Injection_run) ? 2 : 8;
+	int pt_count = 0;
 	for(int i = 0 ; i < Nbin ; ++i){
 	  double x = tpr->GetBinCenter(i);
 	  double y = tpr->GetBinContent(i);
-	  
-	  if( x > 0 && x < 300 && y != 0 && i % get_pt_for_each == 0){
-	    LG_tmp.push_back(x);
-	    HG_tmp.push_back(y);}
-	  if( x > 300 && y != 0 && i%5 == 0){
-	    LG_tmp.push_back(x);
-	    HG_tmp.push_back(y);}
+	  if( y == 0 || x > 300){ continue; }
+	  if( x < 300 ){
+	    pt_count++;
+	    if(pt_count % get_pt_for_each == 0){
+	      LG_tmp.push_back(x);
+	      HG_tmp.push_back(y);}}
 	}
 	
 	//Prevent spike
-	for(int i = 1 ; i < (int)HG.size()-1 ; ++i){
+	for(int i = 1 ; i < (int)HG_tmp.size()-1 ; ++i){
 	  double x = LG_tmp[i];
 	  double y = HG_tmp[i];
-	  double y_previous = HG_tmp[i-1];
+	  double y_previous = HG_tmp[i-1];  
 	  double y_latter   = HG_tmp[i+1];
 	  if( y > y_previous && y > y_latter ){ continue; }
 	  else if( y < y_previous && y < y_latter ){ continue; }

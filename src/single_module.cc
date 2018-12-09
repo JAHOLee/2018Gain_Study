@@ -25,7 +25,7 @@ single_module::single_module( TChain *chain, string filename, string outname ):T
 
   //TFile f(filename.c_str());
   //T_Rawhit = (TTree*)f.Get("pulseshapeplotter/tree");
-   
+
   root_out = new TFile(outname.c_str(),"update");
   if(root_out->IsZombie())
     root_out = new TFile(outname.c_str(),"recreate");
@@ -34,7 +34,8 @@ single_module::single_module( TChain *chain, string filename, string outname ):T
   TTree *TPro_history = new TTree("history","history");
   int history_Run;
   TPro_history-> Branch("history_Run",&history_Run);
-  TPro_history->Write("history",TObject::kOverwrite);
+  root_out->Write("history",TObject::kOverwrite);
+  //TPro_history->Write("history",TObject::kOverwrite);
   
   fname = filename; 
 }
@@ -135,29 +136,32 @@ void single_module::Fill_Tprofile(){
   //   return;  }
 
   TDirectory *dir;
-  sprintf(title,"Module_%i",moduleID_int);
+  sprintf(title,"Module%i",moduleID_int);
  
   if(!root_out->GetListOfKeys()->Contains(title)){
     dir = root_out->mkdir(title,moduleID_str.c_str());}
   else{
     dir = (TDirectory*)root_out->Get(title);  }
   dir->cd();
-
   for(int injCHID = 0 ; injCHID < (int)inj_CH_vec.size() ; ++injCHID){
     inj_CH = inj_CH_vec[injCHID];
     
     TProfile *tpr_HGLG[MAXSKI];
     TProfile *tpr_LGTOT[MAXSKI];
+    TProfile *tpr_HGinj[MAXSKI];	
     TProfile *tpr_LGinj[MAXSKI];
     TProfile *tpr_TOTinj[MAXSKI];
 
   
     for(int chip = 0 ; chip < MAXSKI ; ++chip){
+
       sprintf(title,"HGLG_M%i_chip%i_ch%i",moduleID_int,chip,inj_CH);
       tpr_HGLG[chip] = new TProfile(title,title,400,0,800,0,4000);
       sprintf(title,"LGTOT_M%i_chip%i_ch%i",moduleID_int,chip,inj_CH);
-      tpr_LGTOT[chip] = new TProfile(title,title,300,0,800,0,3000);
-    
+      tpr_LGTOT[chip] = new TProfile(title,title,200,0,800,0,2000);
+
+      sprintf(title,"HGinj_M%i_chip%i_ch%i",moduleID_int,chip,inj_CH);
+      tpr_HGinj[chip] = new TProfile(title,title,400,0,4000,0,3000);
       sprintf(title,"LGinj_M%i_chip%i_ch%i",moduleID_int,chip,inj_CH);
       tpr_LGinj[chip] = new TProfile(title,title,400,0,4000,0,3000);
       sprintf(title,"TOTinj_M%i_chip%i_ch%i",moduleID_int,chip,inj_CH);
@@ -176,9 +180,13 @@ void single_module::Fill_Tprofile(){
 	TOT  = TotSlow->at(hit);
 	chip = skirocID->at(hit);
 	inj_daq = (int) 4096./nevents * ev;
-	if( LG < 5 ) continue;
+	//cout << "chip " << chip << ", ch " << inj_CH << ", " << HG << ", "
+	//     << LG << ", " << TOT << endl;
+	
+	//if( LG < 5 ) continue;
 	tpr_HGLG[chip]->Fill(LG,HG,1);
 	tpr_LGTOT[chip]->Fill(TOT,LG,1);
+	tpr_HGinj[chip]->Fill(inj_daq,HG,1);
 	tpr_LGinj[chip]->Fill(inj_daq,LG,1);
 	tpr_TOTinj[chip]->Fill(inj_daq,TOT,1);
       }
@@ -205,7 +213,17 @@ void single_module::Fill_Tprofile(){
       tpr_LGTOT[ chip ]->SetMarkerSize(1.2);
       tpr_LGTOT[ chip ]->SetMarkerColor(chip+1);
       tpr_LGTOT[ chip ]->Write(title,TObject::kOverwrite);
-  
+
+      if(tpr_HGinj[ chip ]->GetEntries() == 0){
+	continue;}
+      sprintf(title,"HGinj_chip%i_ch%i",chip,inj_CH);
+      tpr_HGinj[ chip ]->SetTitle(title);
+      tpr_HGinj[ chip ]->SetName(title);
+      tpr_HGinj[ chip ]->SetMarkerStyle(20);
+      tpr_HGinj[ chip ]->SetMarkerSize(1.2);
+      tpr_HGinj[ chip ]->SetMarkerColor(chip+1);
+      tpr_HGinj[ chip ]->Write(title,TObject::kOverwrite);
+
 
       if(tpr_LGinj[ chip ]->GetEntries() == 0){
 	continue;}
@@ -229,7 +247,14 @@ void single_module::Fill_Tprofile(){
       tpr_TOTinj[ chip ]->Write(title,TObject::kOverwrite);
     }
 
+    for(int i = 0 ; i < MAXSKI ; ++i){
+      delete tpr_HGLG[i];
+      delete tpr_LGTOT[i];
+      delete tpr_HGinj[i];
+      delete tpr_LGinj[i];
+      delete tpr_TOTinj[i];    }
   }
+   
 }
 void single_module::Correct_path_message(){
   cout << "Can't read the path of the root or yaml, please put a path like:" 

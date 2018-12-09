@@ -183,13 +183,7 @@ void main_make_Inj_TProfile(string TProfile_name){
   if(DBG){
     cout << "Press any key to continue...\n\n" << endl;
     getchar();}
-
-
-  // MakePlots *M = new MakePlots(SC);
-  // bool turefile = M->Init_TFile(TProfile_name);
   
-  // if(!turefile){ return; }
-
   string filename;
 
   while(true){    
@@ -208,6 +202,7 @@ void main_make_Inj_TProfile(string TProfile_name){
 	chain_single->Add(filename.c_str());
 	single_module S(chain_single,filename,TProfile_name);
 	S.Loop();
+	delete chain_single;
       }
       else{
 	cout << filename.c_str() << " contains unknown tree to me ..." << endl;}

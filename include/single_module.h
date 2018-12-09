@@ -7,6 +7,7 @@
 #ifndef single_module_h
 #define single_module_h
 
+#include "MakePlots.h"
 #include "TTree.h"
 #include "TROOT.h"
 #include "TH2Poly.h"
@@ -33,7 +34,9 @@ class single_module{
   int    inj_event;
   int    inj_CH;
   vector<int> inj_CH_vec;
-  
+
+  MakePlots *myplots;
+
  private:
   
   TTree        *T_Rawhit;
@@ -51,7 +54,6 @@ class single_module{
   string moduleID_str;
   string labelID ;
   string filepath;
-
   
   ///////////////////////////////
   // Declaration of leaf types //
