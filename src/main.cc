@@ -184,6 +184,12 @@ void main_make_Inj_TProfile(string TProfile_name){
     cout << "Press any key to continue...\n\n" << endl;
     getchar();}
 
+
+  // MakePlots *M = new MakePlots(SC);
+  // bool turefile = M->Init_TFile(TProfile_name);
+  
+  // if(!turefile){ return; }
+
   string filename;
 
   while(true){    

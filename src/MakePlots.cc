@@ -48,11 +48,14 @@ bool MakePlots::Init_TFile(string TPro_outputname){
 	  HG_LG[BD][chip][ch] = (TProfile*)TPro_root->Get(HGLG_name);
 	  LG_TOT[BD][chip][ch] = (TProfile*)TPro_root->Get(LGTOT_name);
 	  // Check TProfile exist
-	  if(HG_LG[BD][chip][ch] == NULL || LG_TOT[BD][chip][ch] == NULL){
-	    cout << "\nFile " << TPro_outputname << " has no object named "
-		 << HGLG_name << " or " << LGTOT_name << "\n"
-		 << "Please choose another root file or create one.\n" << endl;
-	    return false; }
+	  if(TPro_history ->GetEntries() != 0){
+	    if(HG_LG[BD][chip][ch] == NULL || LG_TOT[BD][chip][ch] == NULL){
+	      cout << "\nFile " << TPro_outputname << " has no object named "
+		   << HGLG_name << " or " << LGTOT_name << "\n"
+		   << "Please choose another root file or create one.\n"
+		   << endl;
+	      return false; }
+	  }
 	}
       }
     }
