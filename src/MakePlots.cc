@@ -175,7 +175,7 @@ void MakePlots::Write_TProfile(){
 }
 void MakePlots::root_logon(){
 
-cout << endl << "Welcome to the ATLAS rootlogon.C" << endl;
+cout << endl << "Welcome to the rootlogon.C" << endl;
 //
 // based on a style file from BaBar
 //

@@ -7,6 +7,7 @@
 #include "TCanvas.h"
 #include "TProfile.h"
 #include "TSpline.h"
+#include "TLine.h"
 #include "TH1.h"
 #include "TF1.h"
 #include <vector>
@@ -29,6 +30,7 @@ public:
     T2L  = -1;
     T2LT = -1;
     TOFF = -1;
+    TOT_THRES_LG = -1;
     HLTYPE = false;
     LTTYPE = false;
     HGLG_FitSKI  = 0;
@@ -45,6 +47,7 @@ public:
   double T2L  ;
   double T2LT ;
   double TOFF ;
+  double TOT_THRES_LG;
   bool   HLTYPE;
   bool   LTTYPE;
   int    HGLG_FitSKI;
@@ -75,7 +78,11 @@ class fitter{
 
  
  private:
- 
+
+ //Option to disable canvas
+ bool batch_mode;
+
+ // members
  TGraph *gr;
  TCanvas *c1;
  output opt_val[MAXBOARDS*MAXSKI*MAXCH];
@@ -94,7 +101,7 @@ class fitter{
  void TSpline_2nd_deri(TH1D& h_2nd_deri,TH1D *h_deri,double* sat_x);
  double first_P_lower_thres(TH1D* hist,double thres,double lowerbond,double upperbond);
  vector<double> findzeros(TH1D* hist);
- 
+ void LGTOT_result(TProfile& tpr, TSpline3 &s, TH1D& h_deri,TLine& left, TLine& right, TF1& Fit);
  
 
  vector<bool>   fit_remove;

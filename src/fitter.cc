@@ -17,6 +17,8 @@ fitter::fitter(setup_config *SC,MakePlots *M,string filename){
   myplots = M;
   fname = filename;
   c1 = new TCanvas();
+  batch_mode = true;
+  c1->SetBatch(batch_mode);
 }
 fitter::~fitter(){
 }
@@ -741,7 +743,7 @@ void fitter::fit_spline(){
   //h1->Rebin(rebinN);
   //bool savepng = 0;
   //int stop_and_look = -1;
-  //gROOT->SetBatch(kTRUE);
+  
   
   TF1 *linear = new TF1("","[0]+x*[1]",MINPOINT,150);
   linear->SetParLimits(0,-50,50);
@@ -1406,7 +1408,7 @@ void fitter::fit_LGTOT(){
   double Offset_avg[MAXBD][MAXSKI],Gain_avg[MAXBD][MAXSKI];
   double Trans_avg [MAXBD][MAXSKI];
   double Offset[MAXBD][MAXSKI][MAXCH],Gain[MAXBD][MAXSKI][MAXCH];
-  double Trans[MAXBD][MAXSKI][MAXCH];
+  double Trans[MAXBD][MAXSKI][MAXCH],Thres_LG[MAXBD][MAXSKI][MAXCH];
   int    fit_preselect_counter[MAXBD][MAXSKI];
   bool   Good_fit[MAXBD][MAXSKI][MAXCH];
   // Initialize output variables
@@ -1417,6 +1419,7 @@ void fitter::fit_LGTOT(){
       Trans_avg [BD][SKI] = 0;
       fit_preselect_counter [BD][SKI] = 0;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
+	Thres_LG[BD][SKI][CH] = -1;
 	Offset  [BD][SKI][CH] = -1;
 	Gain    [BD][SKI][CH] = -1;
 	Trans   [BD][SKI][CH] = -1;
@@ -1428,8 +1431,9 @@ void fitter::fit_LGTOT(){
 
   // TProfile to fit, also create histogram for Spline purpose
   int rebinN = 1; // Rebin if the bins are too much
-
-  for(int BD = 0 ;BD < MAXBD ; ++BD){
+  ofstream tmpof("tmpof.txt");
+  int minus1counter = 0;
+  for(int BD = 0 ;BD < 3 ; ++BD){
     int moduleID = mysetup->Module_List[BD];
     cout << "LGTOT BD "<< BD << "(Module " << moduleID << ") "<< endl;
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
@@ -1445,6 +1449,31 @@ void fitter::fit_LGTOT(){
 	if(tpr == NULL) continue; // Prevention
 	
 	tpr->Rebin(rebinN);
+
+	//Find TOT thres in LG unit
+	double tmp_thres = -1;
+	for(int i = 0 ; i < tpr->GetNbinsX () ; ++i){
+	  double x = tpr->GetBinCenter(i);
+	  double y = tpr->GetBinContent(i);
+	  if(x == 0 || y == 0) continue;
+	  
+	  //Don't care about points too far away
+	  if(x > 50){
+	    continue;}
+	  //Take first point as threshold
+	  if( x > 4 ){
+	    tmp_thres = y;
+	    //Add prevention if beam behaves wired
+	    if(tpr->GetBinError(i) < 20){ break; }
+	    // else{ cout << "too big error! " << tpr->GetBinError(i) << endl;
+	    //   tmpof << BD << "," << SKI << "," << CH << endl;
+	    //   cout << BD << "," << SKI << "," << CH << endl;
+	    //   getchar();};
+	  }
+	}
+
+       	Thres_LG[BD][SKI][CH] = tmp_thres;
+	if(tmp_thres == -1){ minus1counter++;}
 	// Pre-selection for fitting
 	int nentry = tpr->GetEntries();
 	if( nentry < 100 ) continue;
@@ -1552,6 +1581,7 @@ void fitter::fit_LGTOT(){
 	h_derivative->SetMinimum(0);
 	Draw_Spline_and_1stderi(*tpr,*s,*h_derivative);
 	c1->Update();
+	//c1->WaitPrimitive();
 	
 	//Find local maximum of 1st derivative, take it as center of good fit
 	double localmax_x,localmax_y;
@@ -1574,7 +1604,7 @@ void fitter::fit_LGTOT(){
 	    fit_member++;
 	  }
 	}
-	//TODO : Figure out what to do id fit_member is too low
+	//TODO : Figure out what to do if fit_member is too low
 	tpr->Fit(sat_fit,"QEMR0");
 
 	double tmp_gain = sat_fit->GetParameter(1);
@@ -1593,14 +1623,14 @@ void fitter::fit_LGTOT(){
 	  h_res->SetBinContent(i,res);
 	  h_res->SetBinError(i,error);
 	  if(x > localmax_x && abs(res) > 0.05 && !coutflag){
-	    cout << "trans pt = " << y << endl;
+	    //cout << "trans pt = " << y << endl;
 	    coutflag = true;
 	    tmp_Trans = y;
 	  }
 	}
 
 
-	ratio_plot(tpr,sat_fit,h_res,"TOT","LG");
+	//ratio_plot(tpr,sat_fit,h_res,"TOT","LG");
 	
 	//c1->WaitPrimitive();
 	//c1->SaveAs("LGTOT_spline_fit.png");
@@ -1611,14 +1641,34 @@ void fitter::fit_LGTOT(){
 	Gain    [BD][SKI][CH] = tmp_gain;
 	Trans   [BD][SKI][CH] = tmp_Trans;
         fit_preselect_counter [BD][SKI]++;
-	
-	delete s; delete h_derivative; delete h_res;
 
+	//Show LGTOT result
+	if(!batch_mode){
+	  
+	  TLine *left   = new TLine(fit_range_low,sat_fit->Eval(localmax_x)*0.7,fit_range_low,sat_fit->Eval(localmax_x)*1.3);
+	  TLine *right  = new TLine(fit_range_high,sat_fit->Eval(localmax_x)*0.7,fit_range_high,sat_fit->Eval(localmax_x)*1.3);
+	  
+	  left->SetLineColor(6);
+	  left->SetLineWidth(2.5);
+	  left->SetLineStyle(9);
+	  right->SetLineColor(6);
+	  right->SetLineWidth(2.5);
+	  right->SetLineStyle(9);
+	  sat_fit->SetLineColor(7);
+	  sat_fit->SetLineWidth(2.5);
+	    
+	  //sat_fit->SetRange(Offset  [BD][SKI][CH],localmax_x);
+	  LGTOT_result(*tpr,*s,*h_derivative,*left,*right,*sat_fit);
+	  
+	  delete left; delete right;
+	}
 	
+	delete s; delete h_derivative; delete h_res;	
 	
       }
     }
   }
+  cout << "minus1counter = " << minus1counter << endl;
   
   //Filling output class
   for(int BD = 0 ;BD < MAXBD ; ++BD){
@@ -1645,6 +1695,7 @@ void fitter::fit_LGTOT(){
 	   << "/" << fit_preselect_counter [BD][SKI] << endl;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	opt_val[(BD*4+SKI)*32+CH].LTTYPE = Good_fit [BD][SKI][CH];
+	opt_val[(BD*4+SKI)*32+CH].TOT_THRES_LG = Thres_LG[BD][SKI][CH];
 	if(Good_fit [BD][SKI][CH]){
 	  opt_val[(BD*4+SKI)*32+CH].T2L  = Gain[BD][SKI][CH];
 	  opt_val[(BD*4+SKI)*32+CH].TOFF = Offset[BD][SKI][CH];
@@ -1727,7 +1778,7 @@ void fitter::Draw_Spline_and_1stderi(TProfile& tpr, TSpline3 &s, TH1D& h_deri){
 
 void fitter::fit_output(){
 
-  gROOT->SetBatch(kTRUE);
+  //gROOT->SetBatch(batch_mode);
   cout << "Starting HGLG " << fname << " fitting... " << endl;
   fit_spline();
 
@@ -1740,7 +1791,7 @@ void fitter::fit_output(){
   outname = string(outname + string("_fittingoutput.txt"));
   calib_result.open(outname.c_str());
   
-  calib_result << "Layer  Module_ID  ASIC_ID  Channel  ADC_To_MIP  LowGain_To_HighGain_Transition  LowGain_To_HighGain_Conversion  TOT_To_LowGain_Transition  TOT_To_LowGain_Conversion  TOT_Offset  HLType LTType HGLG_FitSKI LGTOTFitSKI\n";
+  calib_result << "Layer  Module_ID  ASIC_ID  Channel  ADC_To_MIP  LowGain_To_HighGain_Transition  LowGain_To_HighGain_Conversion  TOT_To_LowGain_Transition  TOT_To_LowGain_Conversion  TOT_Offset  TOT_thres(LG)  HLType LTType HGLG_FitSKI LGTOTFitSKI\n";
 
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
@@ -1750,7 +1801,8 @@ void fitter::fit_output(){
 	calib_result << O.L_ID << "\t" << O.M_ID << "\t" << O.S_ID << "\t"
 		     << O.C_ID << "\t" << O.A2M  << "\t" << O.L2HT << "\t"
 		     << O.L2H  << "\t" << O.T2LT << "\t" << O.T2L  << "\t"
-		     << O.TOFF << "\t" << O.HLTYPE << "\t" << O.LTTYPE << "\t"
+		     << O.TOFF << "\t" << O.TOT_THRES_LG << "\t"
+		     << O.HLTYPE << "\t" << O.LTTYPE << "\t"
 		     << O.HGLG_FitSKI  << "\t" << O.LGTOT_FitSKI << endl;
       }
     }
@@ -1761,3 +1813,40 @@ void fitter::fit_output(){
 
 
 
+void fitter::LGTOT_result(TProfile& tpr, TSpline3 &s, TH1D& h_deri,TLine& left, TLine& right, TF1& Fit){
+  
+  TPad pad1_sp("pad1_sp","",0,0,1,1);
+  TPad pad2_sp("pad2_sp","",0,0,1,1);
+
+  pad2_sp.SetFillColor(0);
+  pad2_sp.SetFillStyle(4000);
+  pad2_sp.SetFrameFillStyle(0);
+	
+  pad1_sp.Draw();
+  pad1_sp.cd();
+  s.SetLineColor(2);
+  s.SetLineWidth(1.5);
+  tpr.Draw();
+  tpr.SetXTitle("TOT");
+  tpr.SetYTitle("LG");
+  tpr.GetYaxis()->SetTitleOffset(1.2);
+  s.Draw("same");
+  left.Draw("same");
+  right.Draw("same");
+  Fit.Draw("same");
+  
+  
+  pad2_sp.Draw();
+  pad2_sp.cd();
+  
+  h_deri.SetLineColor(3);
+  h_deri.SetLineWidth(1.5);
+  h_deri.GetXaxis()->SetNdivisions(0);
+  h_deri.GetYaxis()->SetTitle("1st_deri");
+  h_deri.GetYaxis()->SetTitleOffset(0.8);
+  h_deri.Draw("Y+");
+  
+  c1->cd();
+  c1->Update();
+  c1->WaitPrimitive();
+}
