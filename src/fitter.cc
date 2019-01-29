@@ -1431,9 +1431,9 @@ void fitter::fit_LGTOT(){
 
   // TProfile to fit, also create histogram for Spline purpose
   int rebinN = 1; // Rebin if the bins are too much
-  ofstream tmpof("tmpof.txt");
-  int minus1counter = 0;
-  for(int BD = 0 ;BD < 3 ; ++BD){
+  //ofstream tmpof("tmpof.txt");
+  //int minus1counter = 0;
+  for(int BD = 0 ;BD < MAXBD ; ++BD){
     int moduleID = mysetup->Module_List[BD];
     cout << "LGTOT BD "<< BD << "(Module " << moduleID << ") "<< endl;
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
@@ -1458,7 +1458,7 @@ void fitter::fit_LGTOT(){
 	  if(x == 0 || y == 0) continue;
 	  
 	  //Don't care about points too far away
-	  if(x > 50){
+	  if(x > 20){
 	    continue;}
 	  //Take first point as threshold
 	  if( x > 4 ){
@@ -1473,7 +1473,11 @@ void fitter::fit_LGTOT(){
 	}
 
        	Thres_LG[BD][SKI][CH] = tmp_thres;
-	if(tmp_thres == -1){ minus1counter++;}
+	// if(tmp_thres == -1){
+	//   tpr->Draw();
+	//   c1->Update();
+	//   c1->WaitPrimitive();
+	//   minus1counter++;}
 	// Pre-selection for fitting
 	int nentry = tpr->GetEntries();
 	if( nentry < 100 ) continue;
@@ -1668,7 +1672,7 @@ void fitter::fit_LGTOT(){
       }
     }
   }
-  cout << "minus1counter = " << minus1counter << endl;
+  //  cout << "minus1counter = " << minus1counter << endl;
   
   //Filling output class
   for(int BD = 0 ;BD < MAXBD ; ++BD){
@@ -1694,8 +1698,7 @@ void fitter::fit_LGTOT(){
       cout << "BD " << BD << ", SKI " << SKI << " member " << counter
 	   << "/" << fit_preselect_counter [BD][SKI] << endl;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
-	opt_val[(BD*4+SKI)*32+CH].LTTYPE = Good_fit [BD][SKI][CH];
-	opt_val[(BD*4+SKI)*32+CH].TOT_THRES_LG = Thres_LG[BD][SKI][CH];
+	opt_val[(BD*4+SKI)*32+CH].LTTYPE = Good_fit [BD][SKI][CH];	
 	if(Good_fit [BD][SKI][CH]){
 	  opt_val[(BD*4+SKI)*32+CH].T2L  = Gain[BD][SKI][CH];
 	  opt_val[(BD*4+SKI)*32+CH].TOFF = Offset[BD][SKI][CH];
@@ -1713,6 +1716,33 @@ void fitter::fit_LGTOT(){
 	  opt_val[(BD*4+SKI)*32+CH].LGTOT_FitSKI = counter;
 	}
       }      
+    }
+  }
+  
+  //Assign TOT threshold in LG
+  for(int BD = 0 ;BD < MAXBD ; ++BD){
+    for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
+      int thres_counter = 0;
+      double Thres_avg  = 0;
+      for(int CH = 0 ; CH < MAXCH ; ++CH){
+	if(Thres_LG[BD][SKI][CH] != -1){
+	  Thres_avg += Thres_LG[BD][SKI][CH];
+	  thres_counter++;}
+      }
+      if(thres_counter != 0)
+	Thres_avg /= thres_counter;
+      else{ Thres_avg = -1; }
+      
+      for(int CH = 0 ; CH < MAXCH ; ++CH){
+	if(Thres_LG[BD][SKI][CH] != -1){
+	  opt_val[(BD*4+SKI)*32+CH].TOT_THRES_LG = Thres_LG[BD][SKI][CH];
+	  opt_val[(BD*4+SKI)*32+CH].THRES_TYPE   = true;
+	}
+	else{
+	  opt_val[(BD*4+SKI)*32+CH].TOT_THRES_LG = Thres_avg;
+	  opt_val[(BD*4+SKI)*32+CH].THRES_TYPE   = false;
+	}
+      }
     }
   }
   
@@ -1791,7 +1821,7 @@ void fitter::fit_output(){
   outname = string(outname + string("_fittingoutput.txt"));
   calib_result.open(outname.c_str());
   
-  calib_result << "Layer  Module_ID  ASIC_ID  Channel  ADC_To_MIP  LowGain_To_HighGain_Transition  LowGain_To_HighGain_Conversion  TOT_To_LowGain_Transition  TOT_To_LowGain_Conversion  TOT_Offset  TOT_thres(LG)  HLType LTType HGLG_FitSKI LGTOTFitSKI\n";
+  calib_result << "Layer  Module_ID  ASIC_ID  Channel  ADC_To_MIP  LowGain_To_HighGain_Transition  LowGain_To_HighGain_Conversion  TOT_To_LowGain_Transition  TOT_To_LowGain_Conversion  TOT_Offset  HLType  LTType  HGLG_FitSKI  LGTOTFitSKI  TOT_thres(LG)  TOT_thres_flag\n";
 
   for(int BD = 0 ;BD < MAXBD ; ++BD){
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
@@ -1801,9 +1831,9 @@ void fitter::fit_output(){
 	calib_result << O.L_ID << "\t" << O.M_ID << "\t" << O.S_ID << "\t"
 		     << O.C_ID << "\t" << O.A2M  << "\t" << O.L2HT << "\t"
 		     << O.L2H  << "\t" << O.T2LT << "\t" << O.T2L  << "\t"
-		     << O.TOFF << "\t" << O.TOT_THRES_LG << "\t"
-		     << O.HLTYPE << "\t" << O.LTTYPE << "\t"
-		     << O.HGLG_FitSKI  << "\t" << O.LGTOT_FitSKI << endl;
+		     << O.TOFF << "\t" << O.HLTYPE << "\t" << O.LTTYPE << "\t"
+		     << O.HGLG_FitSKI  << "\t" << O.LGTOT_FitSKI << "\t"
+		     << O.TOT_THRES_LG << "\t" << O.THRES_TYPE   << endl;
       }
     }
   }

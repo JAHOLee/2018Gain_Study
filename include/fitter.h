@@ -30,11 +30,12 @@ public:
     T2L  = -1;
     T2LT = -1;
     TOFF = -1;
-    TOT_THRES_LG = -1;
     HLTYPE = false;
     LTTYPE = false;
     HGLG_FitSKI  = 0;
     LGTOT_FitSKI = 0;
+    TOT_THRES_LG = -1;
+    THRES_TYPE   = 0;
   };
   
   int L_ID ;
@@ -47,11 +48,12 @@ public:
   double T2L  ;
   double T2LT ;
   double TOFF ;
-  double TOT_THRES_LG;
   bool   HLTYPE;
   bool   LTTYPE;
   int    HGLG_FitSKI;
   int    LGTOT_FitSKI;
+  double TOT_THRES_LG;
+  bool   THRES_TYPE;
 
 };
 
