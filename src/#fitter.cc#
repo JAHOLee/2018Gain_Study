@@ -17,7 +17,7 @@ fitter::fitter(setup_config *SC,MakePlots *M,string filename){
   myplots = M;
   fname = filename;
   c1 = new TCanvas();
-  batch_mode = false; //true
+  batch_mode =; //true
   c1->SetBatch(batch_mode);
 }
 fitter::~fitter(){

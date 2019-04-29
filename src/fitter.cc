@@ -17,7 +17,7 @@ fitter::fitter(setup_config *SC,MakePlots *M,string filename){
   myplots = M;
   fname = filename;
   c1 = new TCanvas();
-  batch_mode = false; //true
+  batch_mode = true; //true
   c1->SetBatch(batch_mode);
 }
 fitter::~fitter(){
@@ -88,10 +88,10 @@ void fitter::fit(int labelE){
     cout << "BD "<< BD << endl;
     for(int SKI = 0 ; SKI < MAXSKI ; ++SKI){
       cout << "SKI "<< SKI << endl;
-      if( BD == 8 && (SKI ==2 || SKI ==3))//-----------------------------
-	stop_and_look = 1;//------------------------------------------
-      else//-------------------------------------------------------
-	stop_and_look = -1;//---------------------------------------------
+      if( BD == 8 && (SKI ==2 || SKI ==3))
+	stop_and_look = 1;
+      else
+	stop_and_look = -1;
       for(int CH = 0 ; CH < MAXCH ; ++CH){
 	p0_ARR[BD][SKI][CH] = -999;
 	p1_ARR[BD][SKI][CH] = -999;
@@ -944,7 +944,7 @@ void fitter::fit_spline(){
 	  sat_good[BD][SKI][CH] = false;
 
 	c1->Update();
-	c1->WaitPrimitive();//------------no this line
+	//c1->WaitPrimitive();//------------use this line to see the fitting steps
 	
 	
 	delete s;delete h_derivative;
