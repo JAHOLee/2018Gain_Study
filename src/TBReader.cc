@@ -131,16 +131,11 @@ void TBReader::Init_Beaminfo(bool quite){
 bool TBReader::Check_Config(int given_config){
   Init(true);
   int setup_config;
-  if(RunN <= 722 ) {
+  if(RunN <= 1339 && RunN >= 1155 ) {
     setup_config = 1;
-    if(RunN <= 257){
-      cout << "TOA threshold will be changed after Run 257." << endl;}
   }
-  else if(RunN > 722 && RunN <= 1057){
-    setup_config = 2;}
-  else if(RunN > 1057 && RunN <= 1078){
-    setup_config = 5;
-    return false; //Not going to handle muon run
+  else if(RunN >= 980 && RunN <= 1121){
+    setup_config = 2;
   }
   else{
     setup_config = 3;
